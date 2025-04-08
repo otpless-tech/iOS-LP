@@ -7,7 +7,7 @@ import SafariServices
 import os
 
 
-public class OtplessSwiftConnect: NSObject, URLSessionDelegate {
+public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     private var socketManager: SocketManager? = nil
     internal private(set) var socket: SocketIOClient? = nil
     private var appId: String = ""
@@ -28,8 +28,8 @@ public class OtplessSwiftConnect: NSObject, URLSessionDelegate {
     
     private var shouldLog = false
     
-    public static let shared: OtplessSwiftConnect = {
-        return OtplessSwiftConnect()
+    public static let shared: OtplessSwiftLP = {
+        return OtplessSwiftLP()
     }()
     
     public override init() {
@@ -149,7 +149,7 @@ public class OtplessSwiftConnect: NSObject, URLSessionDelegate {
     
 }
 
-extension OtplessSwiftConnect {
+extension OtplessSwiftLP {
     func openSocket() {
         let socketUrl = URL(string: "https://connect.otpless.app/?token=\(self.roomRequestId)")
         guard let socketUrl = socketUrl else {
@@ -192,7 +192,7 @@ extension OtplessSwiftConnect {
     }
 }
 
-extension OtplessSwiftConnect: SFSafariViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
+extension OtplessSwiftLP: SFSafariViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
     
     public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         sendAuthResponse([
@@ -209,7 +209,7 @@ extension OtplessSwiftConnect: SFSafariViewControllerDelegate, UIAdaptivePresent
     }
 }
 
-extension OtplessSwiftConnect {
+extension OtplessSwiftLP {
     func sendAuthResponse(_ response: [String: Any]) {
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onConnectResponse(response)

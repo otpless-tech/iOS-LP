@@ -1,12 +1,12 @@
 //
 //  File.swift
-//  OtplessSwiftConnect
+//  OtplessSwiftLP
 //
 //  Created by Sparsh on 20/03/25.
 //
 
 
-extension OtplessSwiftConnect {
+extension OtplessSwiftLP {
     func handleParsedEvent(_ socketEvent: SocketEventData) {
         switch socketEvent.eventType {
         case .appInfo:
@@ -29,7 +29,7 @@ extension OtplessSwiftConnect {
     }
 }
 
-extension OtplessSwiftConnect {
+extension OtplessSwiftLP {
     func sendAppInfoToServer() {
         guard let socket = socket else {
             // Send socket null event

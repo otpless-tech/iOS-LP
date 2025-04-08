@@ -1,10 +1,10 @@
 Pod::Spec.new do |s|
-    s.name             = 'OtplessSwiftConnect'
-    s.version          = '1.0.0'
+    s.name             = 'OtplessSwiftLP'
+    s.version          = '1.0.1'
     s.summary          = 'A Swift SDK for integrating Otpless Pre Build UI.'
   
     s.description      = <<-DESC
-                          OtplessSwiftConnect is a Swift-based SDK that enables seamless 
+                          OtplessSwiftLP is a Swift-based SDK that enables seamless 
                           integration with the Otpless platform for user authentication, using the Pre Built UI provided by Otpless.
                          DESC
   
@@ -16,10 +16,10 @@ Pod::Spec.new do |s|
     s.platform         = :ios, '13.0'
     s.swift_version    = '5.9'
   
-    s.source_files     = 'Sources/OtplessSwiftConnect/**/*.{swift}'
+    s.source_files     = 'Sources/OtplessSwiftLP/**/*.{swift}'
 
     s.resource_bundles = {
-        'OtplessSwiftConnect' => ['Sources/PrivacyInfo.xcprivacy']
+        'OtplessSwiftLP' => ['Sources/PrivacyInfo.xcprivacy']
     }
   
     s.dependency 'Socket.IO-Client-Swift', '~> 16.1.1'

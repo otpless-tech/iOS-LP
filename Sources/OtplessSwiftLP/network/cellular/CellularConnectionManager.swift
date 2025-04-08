@@ -1,6 +1,6 @@
 //
 //  CellularConnectionManager.swift
-//  OtplessSwiftConnect
+//  OtplessSwiftLP
 //
 //  Created by Sparsh on 20/03/25.
 //

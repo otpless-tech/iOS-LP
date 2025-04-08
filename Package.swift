@@ -4,13 +4,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "OtplessSwiftConnect",
+    name: "OtplessSwiftLP",
     platforms: [.iOS(.v13)],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "OtplessSwiftConnect",
-            targets: ["OtplessSwiftConnect"]),
+            name: "OtplessSwiftLP",
+            targets: ["OtplessSwiftLP"]),
     ],
     dependencies: [
         // Adding Socket.IO dependency
@@ -20,14 +20,14 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "OtplessSwiftConnect",
+            name: "OtplessSwiftLP",
             dependencies: [
                 .product(name: "SocketIO", package: "socket.io-client-swift")
             ]
         ),
         .testTarget(
-            name: "OtplessSwiftConnectTests",
-            dependencies: ["OtplessSwiftConnect"]
+            name: "OtplessSwiftLPTests",
+            dependencies: ["OtplessSwiftLP"]
         ),
     ]
 )

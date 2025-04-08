@@ -1,6 +1,6 @@
-# OtplessSwiftConnect
+# OtplessSwiftLP
 
-This guide will walk you through integrating the `OtplessSwiftConnect` SDK in your iOS project using CocoaPods.
+This guide will walk you through integrating the `OtplessSwiftLP` SDK in your iOS project using CocoaPods.
 
 ---
 
@@ -11,7 +11,7 @@ This guide will walk you through integrating the `OtplessSwiftConnect` SDK in yo
 1. Add the following to your `Podfile`:
 
     ```ruby
-    pod 'OtplessSwiftConnect'
+    pod 'OtplessSwiftLP'
     ```
 
 2. Then run:
@@ -67,7 +67,7 @@ Add the following keys in your `info.plist` file:
 Import the SDK at the top of your `ViewController.swift`:
 
 ```swift
-import OtplessSwiftConnect
+import OtplessSwiftLP
 ```
 
 ---
@@ -100,10 +100,10 @@ Set the response delegate and optionally enable socket logging:
 override func viewDidLoad() {
     super.viewDidLoad()
     
-    OtplessSwiftConnect.shared.setResponseDelegate(self)
+    OtplessSwiftLP.shared.setResponseDelegate(self)
 
     // Initialize SDK
-    OtplessSwiftConnect.shared.initialize(appId: "YOUR_APP_ID", secret: "YOUR_SECRET") { success in
+    OtplessSwiftLP.shared.initialize(appId: "YOUR_APP_ID", secret: "YOUR_SECRET") { success in
         if success {
             // SDK initialization success
         }
@@ -115,7 +115,7 @@ To start the authentication process, use:
 
 ```swift
 @IBAction private func startButtonTapped() {
-    OtplessSwiftConnect.shared.start(vc: self)
+    OtplessSwiftLP.shared.start(vc: self)
 }
 ```
 
@@ -127,7 +127,7 @@ To start the authentication process, use:
 When your login page is closed or login is successful, stop the Otpless' authentication process: 
 
 ```swift LoginViewController.swift
-OtplessSwiftConnect.shared.cease()
+OtplessSwiftLP.shared.cease()
 ```
 
 **Make sure that `initialize()` is called again if you call `cease()`.**

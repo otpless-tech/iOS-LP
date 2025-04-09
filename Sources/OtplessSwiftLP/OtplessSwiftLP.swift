@@ -12,7 +12,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     internal private(set) var socket: SocketIOClient? = nil
     private var appId: String = ""
     private var loginUri: String = ""
-    private var webviewBaseURL = "https://otpless.tech/rc5/appid/"
+    private var webviewBaseURL = "https://otpless.com/rc5/appid/"
     private var roomRequestToken: String = ""
     internal private(set) var apiRepository: ApiRepository = ApiRepository()
     private lazy var roomTokenUseCase: RoomTokenUseCase = {

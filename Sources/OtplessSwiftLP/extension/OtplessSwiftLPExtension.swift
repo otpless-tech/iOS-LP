@@ -50,7 +50,7 @@ extension OtplessSwiftLP {
     
     func startSNA(requestURLString urlString: String) {
         self.apiRepository.performSNA(requestURL: urlString, completion: { [weak self] result in
-//            self?.sendSocketMessage(eventName: AppEventType.responseOnCellularData.rawValue, eventValue: result)
+            self?.sendSocketMessage(eventName: AppEventType.responseOnCellularData.rawValue, eventValue: result)
         })
     }
     

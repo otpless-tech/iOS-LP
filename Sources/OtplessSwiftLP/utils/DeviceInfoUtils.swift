@@ -144,11 +144,11 @@ class DeviceInfoUtils : @unchecked Sendable {
     }
     
     func generateTrackingId() {
-        if let inid = SecureStorage.shared.retrieve(key: Constants.INID_KEY) {
+        if let inid: String = SecureStorage.shared.getFromUserDefaults(key: Constants.INID_KEY, defaultValue: "") {
             self.inid = inid
         } else {
             inid = generateId(withTimeStamp: true)
-            SecureStorage.shared.save(key: Constants.INID_KEY, value: inid!)
+            SecureStorage.shared.saveToUserDefaults(key: Constants.INID_KEY, value: inid!)
         }
         
         if tsid == nil {
@@ -170,7 +170,7 @@ class DeviceInfoUtils : @unchecked Sendable {
         if inid != nil {
             return inid
         }
-        return SecureStorage.shared.retrieve(key: Constants.INID_KEY)
+        return SecureStorage.shared.getFromUserDefaults(key: Constants.INID_KEY, defaultValue: "")
     }
     
     func getTrackingSessionId() -> String? {

@@ -123,6 +123,7 @@ class DeviceInfoUtils : @unchecked Sendable {
         params["hasOtplessApp"] = hasOTPLESSInstalled.description
         params["hasGmailApp"] = hasGmailInstalled.description
         params["packageName"] = packageName
+        params["platform"] = "iOS-LP"
         
         if #available(iOS 12.0, *) {
             params["isSilentAuthSupported"] = "true"

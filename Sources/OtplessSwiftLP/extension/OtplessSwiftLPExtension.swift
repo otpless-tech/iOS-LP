@@ -31,19 +31,8 @@ extension OtplessSwiftLP {
 
 extension OtplessSwiftLP {
     func sendAppInfoToServer() {
-        guard let socket = socket else {
-            // Send socket null event
-            return
-        }
-        
         let appInfo = DeviceInfoUtils.shared.getAppInfo()
-        socket.emit(
-            "message",
-          [
-                "event_name": "8",
-                "event_value": appInfo
-            ]
-        )
+        sendSocketMessage(eventName: AppEventType.appInfo.rawValue, eventValue: appInfo)
     }
     
     func sendAuthResponseToUser(_ response: [String: Any]) {
@@ -60,8 +49,22 @@ extension OtplessSwiftLP {
     }
     
     func startSNA(requestURLString urlString: String) {
-        self.apiRepository.performSNA(requestURL: urlString, completion: { result in
-            print("OtplessConnect: SNA completed with result: \(result)")
+        self.apiRepository.performSNA(requestURL: urlString, completion: { [weak self] result in
+//            self?.sendSocketMessage(eventName: AppEventType.responseOnCellularData.rawValue, eventValue: result)
         })
+    }
+    
+    func sendSocketMessage(_ messageName: String = "message", eventName: String, eventValue: Any) {
+        guard let socket = socket else {
+            return
+        }
+        
+        socket.emit(
+            messageName,
+          [
+            "event_name": eventName,
+            "event_value": eventValue
+            ]
+        )
     }
 }

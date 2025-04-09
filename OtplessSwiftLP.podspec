@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
   
     s.homepage         = 'https://github.com/otpless-tech/iOS-LP.git'
     s.license          = { :type => 'MIT', :file => 'LICENSE' }
-    s.author           = { 'Sparsh' => 'you@example.com' }
+    s.author           = { 'Sparsh' => 'sparsh.chadha@otpless.com' }
     s.source           = { :git => 'https://github.com/otpless-tech/iOS-LP.git', :tag => s.version.to_s }
   
     s.platform         = :ios, '13.0'

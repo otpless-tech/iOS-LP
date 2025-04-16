@@ -55,8 +55,8 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         }
         
         Task(priority: .medium, operation: { [weak self] in
-            self?.roomRequestToken = await self?.roomTokenUseCase.invoke(appId: appId, secret: secret) ?? ""
-            self?.roomRequestId = await self?.roomIdUseCase.invoke(token: self?.roomRequestToken ?? "") ?? ""
+            self?.roomRequestToken = await self?.roomTokenUseCase.invoke(appId: appId, secret: secret, isRetry: false) ?? ""
+            self?.roomRequestId = await self?.roomIdUseCase.invoke(token: self?.roomRequestToken ?? "", isRetry: false) ?? ""
             
             guard let self = self else {
                 DispatchQueue.main.async {
@@ -145,6 +145,33 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     public func setResponseDelegate(_ delegate: ConnectResponseDelegate) {
         self.delegate = delegate
+    }
+    
+    @objc public func isOtplessDeeplink(url : URL) -> Bool{
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: true), let host = components.host {
+            switch host {
+            case "otpless":
+                return true
+            default:
+                break
+            }
+        }
+        return false
+    }
+    
+    @objc public func processOtplessDeeplink(url : URL) {
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: true), let host = components.host {
+            switch host {
+            case "otpless":
+                if let queryItems = components.queryItems,
+                   let token = queryItems.first(where: { $0.name == "token" })?.value {
+                    delegate?.onConnectResponse(["token":  token])
+                    
+                }
+            default:
+                break
+            }
+        }
     }
     
 }

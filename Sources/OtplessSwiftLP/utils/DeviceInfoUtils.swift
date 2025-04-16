@@ -144,8 +144,9 @@ class DeviceInfoUtils : @unchecked Sendable {
     }
     
     func generateTrackingId() {
-        if let inid: String = SecureStorage.shared.getFromUserDefaults(key: Constants.INID_KEY, defaultValue: "") {
-            self.inid = inid
+        if let savedInid: String = SecureStorage.shared.getFromUserDefaults(key: Constants.INID_KEY, defaultValue: ""),
+           !savedInid.isEmpty {
+            self.inid = savedInid
         } else {
             inid = generateId(withTimeStamp: true)
             SecureStorage.shared.saveToUserDefaults(key: Constants.INID_KEY, value: inid!)

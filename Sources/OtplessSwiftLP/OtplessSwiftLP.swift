@@ -155,7 +155,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
                 if let queryItems = components.queryItems,
                    let token = queryItems.first(where: { $0.name == "token" })?.value {
                     delegate?.onConnectResponse(["token":  token])
-                    
+                    cease()
                 }
             default:
                 break

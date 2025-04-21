@@ -29,6 +29,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     private var shouldLog = false
     
     public static let shared: OtplessSwiftLP = {
+        DeviceInfoUtils.shared.initialise()
         return OtplessSwiftLP()
     }()
     

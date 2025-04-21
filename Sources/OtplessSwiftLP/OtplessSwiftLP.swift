@@ -29,6 +29,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     private var shouldLog = false
     
     public static let shared: OtplessSwiftLP = {
+        DeviceInfoUtils.shared.initialise()
         return OtplessSwiftLP()
     }()
     
@@ -43,8 +44,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     public func initialize(
         appId: String,
         secret: String,
-        merchantLoginUri: String? = nil,
-        onInitializationComplete: @escaping (_ success: Bool) -> Void
+        merchantLoginUri: String? = nil
     ) {
         self.appId = appId
         self.secret = secret
@@ -55,22 +55,11 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         }
         
         Task(priority: .medium, operation: { [weak self] in
-            self?.roomRequestToken = await self?.roomTokenUseCase.invoke(appId: appId, secret: secret) ?? ""
-            self?.roomRequestId = await self?.roomIdUseCase.invoke(token: self?.roomRequestToken ?? "") ?? ""
+            self?.roomRequestToken = await self?.roomTokenUseCase.invoke(appId: appId, secret: secret, isRetry: false) ?? ""
+            self?.roomRequestId = await self?.roomIdUseCase.invoke(token: self?.roomRequestToken ?? "", isRetry: false) ?? ""
             
-            guard let self = self else {
-                DispatchQueue.main.async {
-                    onInitializationComplete(false)
-                }
-                return
-            }
-            
-            if !self.roomRequestId.isEmpty {
-                self.openSocket()
-            }
-            
-            DispatchQueue.main.async {
-                onInitializationComplete(!self.roomRequestId.isEmpty && !self.roomRequestToken.isEmpty)
+            if self?.roomRequestId.isEmpty == false {
+                self?.openSocket()
             }
         })
     }
@@ -145,6 +134,33 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     public func setResponseDelegate(_ delegate: ConnectResponseDelegate) {
         self.delegate = delegate
+    }
+    
+    @objc public func isOtplessDeeplink(url : URL) -> Bool{
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: true), let host = components.host {
+            switch host {
+            case "otpless":
+                return true
+            default:
+                break
+            }
+        }
+        return false
+    }
+    
+    @objc public func processOtplessDeeplink(url : URL) {
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: true), let host = components.host {
+            switch host {
+            case "otpless":
+                if let queryItems = components.queryItems,
+                   let token = queryItems.first(where: { $0.name == "token" })?.value {
+                    delegate?.onConnectResponse(["token":  token])
+                    cease()
+                }
+            default:
+                break
+            }
+        }
     }
     
 }

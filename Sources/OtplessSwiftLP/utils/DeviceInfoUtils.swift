@@ -123,6 +123,8 @@ class DeviceInfoUtils : @unchecked Sendable {
         params["hasOtplessApp"] = hasOTPLESSInstalled.description
         params["hasGmailApp"] = hasGmailInstalled.description
         params["packageName"] = packageName
+        params["platform"] = "iOS-LP"
+        params["sdkVersion"] = "1.0.2"
         
         if #available(iOS 12.0, *) {
             params["isSilentAuthSupported"] = "true"
@@ -142,11 +144,12 @@ class DeviceInfoUtils : @unchecked Sendable {
     }
     
     func generateTrackingId() {
-        if let inid = SecureStorage.shared.retrieve(key: Constants.INID_KEY) {
-            self.inid = inid
+        if let savedInid: String = SecureStorage.shared.getFromUserDefaults(key: Constants.INID_KEY, defaultValue: ""),
+           !savedInid.isEmpty {
+            self.inid = savedInid
         } else {
             inid = generateId(withTimeStamp: true)
-            SecureStorage.shared.save(key: Constants.INID_KEY, value: inid!)
+            SecureStorage.shared.saveToUserDefaults(key: Constants.INID_KEY, value: inid!)
         }
         
         if tsid == nil {
@@ -168,7 +171,7 @@ class DeviceInfoUtils : @unchecked Sendable {
         if inid != nil {
             return inid
         }
-        return SecureStorage.shared.retrieve(key: Constants.INID_KEY)
+        return SecureStorage.shared.getFromUserDefaults(key: Constants.INID_KEY, defaultValue: "")
     }
     
     func getTrackingSessionId() -> String? {

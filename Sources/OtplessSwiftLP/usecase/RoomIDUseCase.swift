@@ -15,7 +15,7 @@ class RoomIDUseCase {
         self.apiRepository = apiRepository
     }
     
-    func invoke(token: String, isRetry: Bool) async -> String? {
+    func invoke(appId: String, isRetry: Bool) async -> String? {
         if !isRetry {
             retryCount = 0
         }
@@ -25,12 +25,12 @@ class RoomIDUseCase {
         }
         
         if let roomId = await apiRepository.getRoomId(headers: [
-            "token": token
+            "appId": appId
         ]) {
             return roomId
         }
         
         retryCount += 1
-        return await invoke(token: token, isRetry: true)
+        return await invoke(appId: appId, isRetry: true)
     }
 }

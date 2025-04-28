@@ -13,16 +13,11 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     private var appId: String = ""
     private var loginUri: String = ""
     private var webviewBaseURL = "https://otpless.com/rc5/appid/"
-    private var roomRequestToken: String = ""
     internal private(set) var apiRepository: ApiRepository = ApiRepository()
-    private lazy var roomTokenUseCase: RoomTokenUseCase = {
-        return RoomTokenUseCase(apiRepository: apiRepository)
-    }()
     private lazy var roomIdUseCase: RoomIDUseCase = {
         return RoomIDUseCase(apiRepository: apiRepository)
     }()
     private var roomRequestId: String = ""
-    private var secret: String = ""
     internal private(set) weak var delegate: ConnectResponseDelegate?
     private var safariViewController: SFSafariViewController?
     
@@ -43,11 +38,9 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     public func initialize(
         appId: String,
-        secret: String,
         merchantLoginUri: String? = nil
     ) {
         self.appId = appId
-        self.secret = secret
         if let merchantLoginUri = merchantLoginUri {
             self.loginUri = merchantLoginUri
         } else {
@@ -55,8 +48,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         }
         
         Task(priority: .medium, operation: { [weak self] in
-            self?.roomRequestToken = await self?.roomTokenUseCase.invoke(appId: appId, secret: secret, isRetry: false) ?? ""
-            self?.roomRequestId = await self?.roomIdUseCase.invoke(token: self?.roomRequestToken ?? "", isRetry: false) ?? ""
+            self?.roomRequestId = await self?.roomIdUseCase.invoke(appId: appId, isRetry: false) ?? ""
             
             if self?.roomRequestId.isEmpty == false {
                 self?.openSocket()
@@ -124,8 +116,6 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         safariViewController?.dismiss(animated: true)
         safariViewController = nil
         roomRequestId = ""
-        roomRequestToken = ""
-        secret = ""
     }
     
     public func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {

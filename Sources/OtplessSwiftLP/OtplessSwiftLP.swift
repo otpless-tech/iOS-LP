@@ -18,7 +18,6 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         return RoomIDUseCase(apiRepository: apiRepository)
     }()
     private var roomRequestId: String = ""
-    private var secret: String = ""
     internal private(set) weak var delegate: ConnectResponseDelegate?
     private var safariViewController: SFSafariViewController?
     
@@ -39,11 +38,9 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     public func initialize(
         appId: String,
-        secret: String,
         merchantLoginUri: String? = nil
     ) {
         self.appId = appId
-        self.secret = secret
         if let merchantLoginUri = merchantLoginUri {
             self.loginUri = merchantLoginUri
         } else {
@@ -119,7 +116,6 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         safariViewController?.dismiss(animated: true)
         safariViewController = nil
         roomRequestId = ""
-        secret = ""
     }
     
     public func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {

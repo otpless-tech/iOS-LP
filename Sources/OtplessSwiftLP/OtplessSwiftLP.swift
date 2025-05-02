@@ -23,6 +23,12 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     private var shouldLog = false
     
+    internal private(set) var extras: [String: String] = [:]
+    private var timeout: TimeInterval = 2
+    
+    private var roomIdContinuation: CheckedContinuation<Void, Never>?
+    private var roomIdResolved = false
+    
     public static let shared: OtplessSwiftLP = {
         DeviceInfoUtils.shared.initialise()
         return OtplessSwiftLP()
@@ -38,7 +44,8 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     public func initialize(
         appId: String,
-        merchantLoginUri: String? = nil
+        merchantLoginUri: String? = nil,
+        timeout: TimeInterval = 2
     ) {
         self.appId = appId
         if let merchantLoginUri = merchantLoginUri {
@@ -47,13 +54,25 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
             self.loginUri = "otpless." + appId.lowercased() + "://otpless"
         }
         
+        self.timeout = timeout
+        
+        NetworkMonitor.shared.startMonitoringCellular()
+        NetworkMonitor.shared.startMonitoringNetwork()
+        
         Task(priority: .medium, operation: { [weak self] in
-            self?.roomRequestId = await self?.roomIdUseCase.invoke(appId: appId, isRetry: false) ?? ""
-            
-            if self?.roomRequestId.isEmpty == false {
-                self?.openSocket()
+            guard let self = self else { return }
+            self.roomRequestId = await self.roomIdUseCase.invoke(appId: appId, isRetry: false) ?? ""
+
+            if !self.roomRequestId.isEmpty {
+                self.openSocket()
+                if self.roomIdResolved == false {
+                    self.roomIdResolved = true
+                    self.roomIdContinuation?.resume()
+                    self.roomIdContinuation = nil
+                }
             }
         })
+
     }
     
     func setupSocketEvents() {
@@ -85,27 +104,76 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         }
     }
     
-    public func start(vc: UIViewController) {
-        let url = getLoadingURL(startUrl: webviewBaseURL + appId, isHeadless: false, loginUri: loginUri, roomId: self.roomRequestId)
+    public func start(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:]) {
+        if connectionCouldNotBeMade() || !areExtrasValid(extras) {
+            return
+        }
         
+        self.extras = extras
+        if roomRequestId.isEmpty {
+            waitForRoomId(timeout: timeout) { [weak self] in
+                guard let self = self else { return }
+                self.proceedToOpenSafariVC(vc: vc, options: options)
+            }
+        } else {
+            proceedToOpenSafariVC(vc: vc, options: options)
+        }
+    }
+
+    private func proceedToOpenSafariVC(vc: UIViewController, options: SafariCustomizationOptions?) {
+        let url = getLoadingURL(startUrl: webviewBaseURL + appId, isHeadless: false, loginUri: loginUri, roomId: self.roomRequestId)
+
         guard let url = url else {
             print("Received null url from getLoadingURL")
             return
         }
-        openSafariVC(from: vc, urlString: url.absoluteString)
+        openSafariVC(from: vc, urlString: url.absoluteString, options: options)
     }
-    
-    func openSafariVC(from merchantVC: UIViewController, urlString: String) {
-        guard let url = URL(string: urlString) else { return }
-        safariViewController = SFSafariViewController(url: url)
-        guard let safariViewController = safariViewController else {
-            return
-        }
 
-        safariViewController.modalPresentationStyle = .formSheet
-        safariViewController.delegate = self
-        safariViewController.presentationController?.delegate = self
-        merchantVC.present(safariViewController, animated: true)
+    private func waitForRoomId(timeout: TimeInterval, completion: @escaping () -> Void) {
+        roomIdResolved = false
+
+        Task {
+            await withCheckedContinuation { continuation in
+                self.roomIdContinuation = continuation
+
+                Task {
+                    try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                    if !roomIdResolved {
+                        roomIdResolved = true
+                        continuation.resume()
+                    }
+                }
+            }
+            completion()
+        }
+    }
+
+    
+    private func openSafariVC(from vc: UIViewController, urlString: String, options: SafariCustomizationOptions?) {
+        DispatchQueue.main.async {
+            guard let url = URL(string: urlString) else { return }
+
+            self.safariViewController = SFSafariViewController(url: url)
+            
+            guard let safariViewController = self.safariViewController else {
+                return
+            }
+            
+            if let barTintColor = options?.preferredBarTintColor {
+                safariViewController.preferredBarTintColor = barTintColor
+            }
+
+            if let controlTintColor = options?.preferredControlTintColor {
+                safariViewController.preferredControlTintColor = controlTintColor
+            }
+            
+            safariViewController.modalPresentationStyle = .formSheet
+            safariViewController.delegate = self
+            safariViewController.presentationController?.delegate = self
+
+            vc.present(safariViewController, animated: true, completion: nil)
+        }
     }
     
     public func cease() {
@@ -116,6 +184,8 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         safariViewController?.dismiss(animated: true)
         safariViewController = nil
         roomRequestId = ""
+        NetworkMonitor.shared.stopMonitoring()
+        NetworkMonitor.shared.stopMonitoring()
     }
     
     public func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
@@ -142,10 +212,21 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         if let components = URLComponents(url: url, resolvingAgainstBaseURL: true), let host = components.host {
             switch host {
             case "otpless":
-                if let queryItems = components.queryItems,
-                   let token = queryItems.first(where: { $0.name == "token" })?.value {
-                    delegate?.onConnectResponse(["token":  token])
-                    cease()
+                if let queryItems = components.queryItems {
+                    if let token = queryItems.first(where: { $0.name == "token" })?.value {
+                        delegate?.onConnectResponse(
+                            .success(token: token)
+                        )
+                    } else if let error = queryItems.first(where: { $0.name == "error"})?.value {
+                        let errorDict = Utils.base64ToJson(base64String: error)
+                        let errorType = (errorDict["errorType"] as? String) ?? ErrorTypes.INITIATE
+                        let errorMessage = (errorDict["errorMessage"] as? String) ?? ""
+                        let errorCode = (errorDict["errorCode"] as? Int) ?? -1
+                        delegate?.onConnectResponse(
+                            OtplessResult.error(errorType: errorType, errorCode: errorCode, errorMessage: errorMessage)
+                        )
+                    }
+                     cease()
                 }
             default:
                 break
@@ -160,9 +241,6 @@ extension OtplessSwiftLP {
         let socketUrl = URL(string: "https://connect.otpless.app/?token=\(self.roomRequestId)")
         guard let socketUrl = socketUrl else {
             os_log("Could not create socket url")
-            sendAuthResponse([
-                "error": "Could not create socket url"
-            ])
             return
         }
         self.socketManager = SocketManager(
@@ -187,9 +265,6 @@ extension OtplessSwiftLP {
         
         guard let socket = self.socket else {
             os_log("Could not create socket")
-            sendAuthResponse([
-                "error": "Could not create socket url"
-            ])
             return
         }
         socket.connect()
@@ -201,27 +276,27 @@ extension OtplessSwiftLP {
 extension OtplessSwiftLP: SFSafariViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
     
     public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-        sendAuthResponse([
-            "error": "User cancelled"
-        ])
-        cease()
+        sendAuthResponse(
+            OtplessResult.error(
+                errorType: ErrorTypes.INITIATE, errorCode: ErrorCodes.USER_CANCELLED_EC, errorMessage: "User cancelled")
+            )
       }
     
     public func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
-        sendAuthResponse([
-            "error": "User cancelled"
-        ])
-        cease()
+        sendAuthResponse(
+            OtplessResult.error(
+                errorType: ErrorTypes.INITIATE, errorCode: ErrorCodes.USER_CANCELLED_EC, errorMessage: "User cancelled")
+        )
     }
 }
 
 extension OtplessSwiftLP {
-    func sendAuthResponse(_ response: [String: Any]) {
+    func sendAuthResponse(_ response: OtplessResult) {
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onConnectResponse(response)
             
-            if let _ = response["token"] as? String {
-                self?.cease() // Stop connection and dismiss safariViewController if we get the token
+            if let token = response.token {
+                self?.cease()
             }
         }
     }
@@ -229,5 +304,5 @@ extension OtplessSwiftLP {
 
 
 @objc public protocol ConnectResponseDelegate: NSObjectProtocol {
-    func onConnectResponse(_ response: [String: Any])
+    func onConnectResponse(_ response: OtplessResult)
 }

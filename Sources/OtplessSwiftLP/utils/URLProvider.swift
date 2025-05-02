@@ -25,15 +25,14 @@ func getLoadingURL(startUrl: String, isHeadless: Bool, loginUri: String, roomId:
     
     let queryItemLoginUri = URLQueryItem(name: "otpl_login_uri", value: loginUri)
     let queryItemWhatsApp = URLQueryItem(name: "otpl_instl_wa", value: DeviceInfoUtils.shared.hasWhatsApp ? "true" : "false")
-    let querySilentAuth = URLQueryItem(name: "isSilentAuthSupported", value: "true")
     let queryItemRoomID = URLQueryItem(name: "otpless_connect_id", value: roomId)
     let queryItemPlatform = URLQueryItem(name: "otpl_platform", value: "iOS")
     let queryItemSDKType = URLQueryItem(name: "otpl_sdk_type", value: "lp")
     
     if urlComponents.queryItems != nil {
-        urlComponents.queryItems?.append(contentsOf: [queryItemWhatsApp, querySilentAuth, queryItemLoginUri, queryItemRoomID, queryItemPlatform, queryItemSDKType])
+        urlComponents.queryItems?.append(contentsOf: [queryItemWhatsApp, queryItemLoginUri, queryItemRoomID, queryItemPlatform, queryItemSDKType])
     } else {
-        urlComponents.queryItems = [queryItemWhatsApp, querySilentAuth, queryItemLoginUri, queryItemRoomID, queryItemPlatform, queryItemSDKType]
+        urlComponents.queryItems = [queryItemWhatsApp, queryItemLoginUri, queryItemRoomID, queryItemPlatform, queryItemSDKType]
     }
     
     if let inid = inid {
@@ -44,6 +43,17 @@ func getLoadingURL(startUrl: String, isHeadless: Bool, loginUri: String, roomId:
     if let tsid = tsid {
         let queryItemTsid = URLQueryItem(name: "tsid", value: tsid)
         urlComponents.queryItems?.append(queryItemTsid)
+    }
+    
+    let queryItemCellularDataEnabled = URLQueryItem(name: "otpl_isCellularDataEnabled", value: NetworkMonitor.shared.isCellularNetworkEnabled.description)
+    
+    urlComponents.queryItems?.append(queryItemCellularDataEnabled)
+    
+    if !OtplessSwiftLP.shared.extras.isEmpty {
+        let base64Params = Utils.base64EncodedString(from: OtplessSwiftLP.shared.extras)
+        if !base64Params.isEmpty {
+            urlComponents.queryItems?.append(URLQueryItem(name: "otpl_extras", value: base64Params))
+        }
     }
     
     return urlComponents.url

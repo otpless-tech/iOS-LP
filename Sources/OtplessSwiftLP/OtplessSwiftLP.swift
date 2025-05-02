@@ -294,7 +294,7 @@ extension OtplessSwiftLP {
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onConnectResponse(response)
             
-            if let token = response.token {
+            if let _ = response.token {
                 self?.cease()
             }
         }

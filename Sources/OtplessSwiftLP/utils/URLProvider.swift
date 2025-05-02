@@ -50,12 +50,12 @@ func getLoadingURL(startUrl: String, isHeadless: Bool, loginUri: String, roomId:
     urlComponents.queryItems?.append(queryItemCellularDataEnabled)
     
     if !OtplessSwiftLP.shared.extras.isEmpty {
-        let email = OtplessSwiftLP.shared.extras["email"] as? String ?? ""
+        let email = OtplessSwiftLP.shared.extras["email"] ?? ""
         var base64Params: String = ""
         if !email.isEmpty {
             base64Params = Utils.base64EncodedString(from: OtplessSwiftLP.shared.extras)
-        } else if let phone = OtplessSwiftLP.shared.extras["phone"] as? String,
-                  let countrCode = OtplessSwiftLP.shared.extras["countryCode"] as? String {
+        } else if let phone = OtplessSwiftLP.shared.extras["phone"],
+                  let countrCode = OtplessSwiftLP.shared.extras["countryCode"] {
             let newExtras = [
                 "phone": "+\(countrCode)\(phone)"
             ]

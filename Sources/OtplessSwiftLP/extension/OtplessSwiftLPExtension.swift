@@ -5,6 +5,8 @@
 //  Created by Sparsh on 20/03/25.
 //
 
+import Foundation
+
 
 extension OtplessSwiftLP {
     func handleParsedEvent(_ socketEvent: SocketEventData) {
@@ -45,7 +47,9 @@ extension OtplessSwiftLP {
             }
         }
         
-        sendAuthResponse(formattedResponse)
+        sendAuthResponse(
+            OtplessResult.success(token: response["token"] as? String ?? "")
+        )
     }
     
     func startSNA(requestURLString urlString: String) {
@@ -66,5 +70,52 @@ extension OtplessSwiftLP {
             "event_value": eventValue
             ]
         )
+    }
+}
+
+extension OtplessSwiftLP {
+    func connectionCouldNotBeMade() -> Bool {
+        if !NetworkMonitor.shared.isConnectedToNetwork {
+            sendAuthResponse(OtplessResult.error(errorType: ErrorTypes.NETWORK, errorCode: ErrorCodes.INTERNET_EC, errorMessage: "Internet is not available"))
+            return true
+        }
+        
+        return false
+    }
+    
+    func areExtrasValid(_ extras: [String: String]) -> Bool {
+        if extras.isEmpty {
+            return true
+        }
+        
+        if let phoneNumber = extras["phone"] {
+            return isPhoneNumberWithCountryCodeValid(phoneNumber: phoneNumber, countryCode: extras["countryCode"] ?? "")
+        } else if let email = extras["email"] {
+            return isEmailValid(email)
+        }
+        
+        return true
+    }
+    
+    private func isEmailValid(_ email: String) -> Bool {
+        if email.isEmpty {
+            return false
+        }
+        let emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
+        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+        return emailPredicate.evaluate(with: email)
+    }
+    
+    private func isPhoneNumberWithCountryCodeValid(phoneNumber: String, countryCode: String) -> Bool {
+        if phoneNumber.isEmpty || countryCode.isEmpty {
+            return false
+        }
+        
+        // Check if the phone number starts with the country code
+        let fullPhoneNumber = countryCode.replacingOccurrences(of: "+", with: "") + phoneNumber
+        let phoneNumberRegex = "^[0-9]+$"  // Basic check for numeric characters only
+        let phoneNumberPredicate = NSPredicate(format: "SELF MATCHES %@", phoneNumberRegex)
+        
+        return phoneNumberPredicate.evaluate(with: fullPhoneNumber)
     }
 }

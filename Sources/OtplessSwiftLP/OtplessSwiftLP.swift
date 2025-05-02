@@ -44,8 +44,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     public func initialize(
         appId: String,
-        merchantLoginUri: String? = nil,
-        timeout: TimeInterval = 2
+        merchantLoginUri: String? = nil
     ) {
         self.appId = appId
         if let merchantLoginUri = merchantLoginUri {
@@ -53,8 +52,6 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         } else {
             self.loginUri = "otpless." + appId.lowercased() + "://otpless"
         }
-        
-        self.timeout = timeout
         
         NetworkMonitor.shared.startMonitoringCellular()
         NetworkMonitor.shared.startMonitoringNetwork()
@@ -64,7 +61,6 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
             self.roomRequestId = await self.roomIdUseCase.invoke(appId: appId, isRetry: false) ?? ""
 
             if !self.roomRequestId.isEmpty {
-                self.openSocket()
                 if self.roomIdResolved == false {
                     self.roomIdResolved = true
                     self.roomIdContinuation?.resume()
@@ -104,12 +100,13 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         }
     }
     
-    public func start(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:]) {
+    public func start(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:], timeout: TimeInterval = 2) {
         if connectionCouldNotBeMade() || !areExtrasValid(extras) {
             return
         }
         
         self.extras = extras
+        self.timeout = timeout
         if roomRequestId.isEmpty {
             waitForRoomId(timeout: timeout) { [weak self] in
                 guard let self = self else { return }
@@ -127,6 +124,8 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
             print("Received null url from getLoadingURL")
             return
         }
+        
+        self.openSocket()
         openSafariVC(from: vc, urlString: url.absoluteString, options: options)
     }
 

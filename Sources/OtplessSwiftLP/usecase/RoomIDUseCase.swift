@@ -16,6 +16,7 @@ class RoomIDUseCase {
     }
     
     func invoke(appId: String, isRetry: Bool) async -> String? {
+        sendEvent(event: .apiInitialized)
         if !isRetry {
             retryCount = 0
         }

@@ -264,6 +264,9 @@ final class CellularConnectionManager: @unchecked Sendable {
     }
     
     func parseRedirect(requestUrl: URL, response: String) -> RedirectResult? {
+        sendEvent(event: .snaUrlRedirection, extras: [
+            "url": requestUrl.absoluteString
+        ])
         guard let _ = requestUrl.host else {
             return nil
         }

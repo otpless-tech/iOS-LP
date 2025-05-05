@@ -10,7 +10,7 @@ import os
 public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     private var socketManager: SocketManager? = nil
     internal private(set) var socket: SocketIOClient? = nil
-    private var appId: String = ""
+    internal private(set) var appId: String = ""
     private var loginUri: String = ""
     private var webviewBaseURL = "https://otpless.com/rc5/appid/"
     internal private(set) var apiRepository: ApiRepository = ApiRepository()
@@ -29,6 +29,8 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     private var roomIdContinuation: CheckedContinuation<Void, Never>?
     private var roomIdResolved = false
     
+    internal private(set) var eventCounter = 1
+    
     public static let shared: OtplessSwiftLP = {
         DeviceInfoUtils.shared.initialise()
         return OtplessSwiftLP()
@@ -46,6 +48,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         appId: String,
         merchantLoginUri: String? = nil
     ) {
+        sendEvent(event: .initializationStarted)
         self.appId = appId
         if let merchantLoginUri = merchantLoginUri {
             self.loginUri = merchantLoginUri
@@ -73,17 +76,38 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     func setupSocketEvents() {
         guard let socket = socket else {
+            sendEvent(event: .connectConnection, extras: [
+                "reason": "Got null socket instance."
+            ])
             os_log("OtplessConnect: Could not create socket connection")
             return
         }
         
         socket.on(clientEvent: .connect) { [weak self] data, ack in
+            sendEvent(event: .connectConnection, extras: [
+                "connection_status": "connected",
+                "api_success": "true"
+            ])
             if self?.shouldLog == true {
                 os_log("OtplessConnect: socket connected")
             }
         }
         
         socket.on(clientEvent: .disconnect) { [weak self] data, ack in
+            let reasonString: String
+            if data.isEmpty {
+                reasonString = "No data"
+            } else if data.count == 1 {
+                reasonString = "\(data[0])"
+            } else {
+                reasonString = data.map { "\($0)" }.joined(separator: ", ")
+            }
+            
+            sendEvent(event: .connectConnection, extras: [
+                "connection_status": "connect_error",
+                "api_success": "false",
+                "reason": reasonString
+            ])
             if self?.shouldLog == true {
                 os_log("OtplessConnect: socket disconnected")
             }
@@ -97,6 +121,15 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
                     print("OtplessConnect: Failed to parse event \(data)")
                 }
             }
+            let dataString: String
+            if data.isEmpty {
+                dataString = "No data"
+            } else if data.count == 1 {
+                dataString = "\(data[0])"
+            } else {
+                dataString = data.map { "\($0)" }.joined(separator: ", ")
+            }
+            sendEvent(event: .connectEventsReceived, extras: ["request": dataString])
         }
     }
     
@@ -115,6 +148,17 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         } else {
             proceedToOpenSafariVC(vc: vc, options: options)
         }
+    }
+    
+    @objc public func userAuthEvent(event: String, providerType: String, fallback: Bool, providerInfo: [String: String]) {
+        var extras: [String: Any] = [:]
+        extras["providerType"] = providerType
+        extras["fallback"] = fallback ? "true" : "false"
+        extras["providerInfo"] = providerInfo
+        sendEvent(
+            event:  "native_lp_cle_\(event)".lowercased(),
+            extras: extras
+        )
     }
 
     private func proceedToOpenSafariVC(vc: UIViewController, options: SafariCustomizationOptions?) {
@@ -193,6 +237,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     public func setResponseDelegate(_ delegate: ConnectResponseDelegate) {
         self.delegate = delegate
+        sendEvent(event: .callbackSet)
     }
     
     @objc public func isOtplessDeeplink(url : URL) -> Bool{
@@ -208,24 +253,27 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     }
     
     @objc public func processOtplessDeeplink(url : URL) {
+        sendEvent(event: .onNewIntent, extras: ["deeplink": url.absoluteString])
         if let components = URLComponents(url: url, resolvingAgainstBaseURL: true), let host = components.host {
             switch host {
             case "otpless":
-                if let queryItems = components.queryItems {
-                    if let token = queryItems.first(where: { $0.name == "token" })?.value {
-                        delegate?.onConnectResponse(
-                            .success(token: token)
-                        )
-                    } else if let error = queryItems.first(where: { $0.name == "error"})?.value {
-                        let errorDict = Utils.base64ToJson(base64String: error)
-                        let errorType = (errorDict["errorType"] as? String) ?? ErrorTypes.INITIATE
-                        let errorMessage = (errorDict["errorMessage"] as? String) ?? ""
-                        let errorCode = (errorDict["errorCode"] as? Int) ?? -1
-                        delegate?.onConnectResponse(
-                            OtplessResult.error(errorType: errorType, errorCode: errorCode, errorMessage: errorMessage)
-                        )
+                if url.lastPathComponent.lowercased() == "close" {
+                    if let queryItems = components.queryItems {
+                        if let token = queryItems.first(where: { $0.name == "token" })?.value {
+                            delegate?.onConnectResponse(
+                                .success(token: token)
+                            )
+                        } else if let error = queryItems.first(where: { $0.name == "error"})?.value {
+                            let errorDict = Utils.base64ToJson(base64String: error)
+                            let errorType = (errorDict["errorType"] as? String) ?? ErrorTypes.INITIATE
+                            let errorMessage = (errorDict["errorMessage"] as? String) ?? ""
+                            let errorCode = (errorDict["errorCode"] as? Int) ?? -1
+                            delegate?.onConnectResponse(
+                                OtplessResult.error(errorType: errorType, errorCode: errorCode, errorMessage: errorMessage)
+                            )
+                        }
+                         cease()
                     }
-                     cease()
                 }
             default:
                 break
@@ -298,6 +346,12 @@ extension OtplessSwiftLP {
                 self?.cease()
             }
         }
+    }
+    
+    func getAndIncrementEventCounter() -> Int {
+        let currentEventCounter = eventCounter
+        eventCounter += 1
+        return currentEventCounter
     }
 }
 

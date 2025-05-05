@@ -53,7 +53,15 @@ extension OtplessSwiftLP {
     }
     
     func startSNA(requestURLString urlString: String) {
+        sendEvent(event: .snaUrlInitiated, extras: [
+            "url": urlString
+        ])
         self.apiRepository.performSNA(requestURL: urlString, completion: { [weak self] result in
+            let api_success = (result["status"] as? String)?.lowercased() == "ok"
+            sendEvent(event: .snaUrlResponse, extras: [
+                "response": Utils.convertDictionaryToString(result),
+                "api_success": api_success.description
+            ])
             self?.sendSocketMessage(eventName: AppEventType.responseOnCellularData.rawValue, eventValue: result)
         })
     }
@@ -63,13 +71,18 @@ extension OtplessSwiftLP {
             return
         }
         
-        socket.emit(
-            messageName,
-          [
+        let eventDict = [
             "event_name": eventName,
             "event_value": eventValue
-            ]
+        ]
+        socket.emit(
+            messageName,
+            eventDict
         )
+        
+        sendEvent(event: .connectEventsSent, extras: [
+            "response": Utils.convertDictionaryToString(eventDict)
+        ])
     }
 }
 

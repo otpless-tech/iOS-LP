@@ -20,7 +20,7 @@ func sendEvent(event: String, extras: [String: Any] = [:]){
         var params = [String: String]()
         params["event_name"] = event
         params["platform"] = "iOS-LP"
-        params["sdk_version"] = "1.1.3"
+        params["sdk_version"] = "1.0.5"
         params["mid"] = OtplessSwiftLP.shared.appId
         params["event_timestamp"] = Utils.formatCurrentTimeToDateString()
         
@@ -102,9 +102,7 @@ private func fetchDataWithGET(apiRoute: String, params: [String: String]? = nil,
     }
     
     let task = URLSession.shared.dataTask(with: request) { (_, _, error) in
-        if let error = error {
-            
-        }
+        
     }
     task.resume()
 }

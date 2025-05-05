@@ -362,10 +362,7 @@ extension OtplessSwiftLP {
     func sendAuthResponse(_ response: OtplessResult) {
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onConnectResponse(response)
-            
-            if let _ = response.token {
-                self?.cease()
-            }
+            self?.cease()
         }
     }
     

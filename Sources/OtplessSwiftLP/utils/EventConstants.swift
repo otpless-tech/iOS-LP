@@ -124,3 +124,25 @@ enum EventConstants: String {
     case snaUrlResponse = "native_lp_sna_url_response"
     case clientCommit = "native_lp_client_commit"
 }
+
+@objcMembers
+public class AuthEvent: NSObject {
+    public static let authInitiated = "AUTH_INITIATED"
+    public static let authSuccess = "AUTH_SUCCESS"
+    public static let authFailed = "AUTH_FAILED"
+
+    public static func toNativeName(_ event: String) -> String {
+        return "native_lp_cle_\(event)".lowercased()
+    }
+}
+
+@objcMembers
+public class ProviderType: NSObject {
+    public static let client = "CLIENT"
+    public static let otpless = "OTPLESS"
+
+    public static func toNativeName(_ provider: String) -> String {
+        return "native_lp_cle_\(provider)".lowercased()
+    }
+}
+

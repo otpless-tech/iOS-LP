@@ -7,7 +7,7 @@ import SafariServices
 import os
 
 
-public class OtplessSwiftLP: NSObject, URLSessionDelegate {
+@objc public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     private var socketManager: SocketManager? = nil
     internal private(set) var socket: SocketIOClient? = nil
     internal private(set) var appId: String = ""
@@ -31,7 +31,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     internal private(set) var eventCounter = 1
     
-    public static let shared: OtplessSwiftLP = {
+    @objc public static let shared: OtplessSwiftLP = {
         DeviceInfoUtils.shared.initialise()
         return OtplessSwiftLP()
     }()
@@ -40,11 +40,11 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         super.init()
     }
     
-    public func enableSocketLogging() {
+    @objc public func enableSocketLogging() {
         self.shouldLog = true
     }
     
-    public func initialize(
+    @objc public func initialize(
         appId: String,
         merchantLoginUri: String? = nil
     ) {
@@ -152,11 +152,11 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
     
     @objc public func userAuthEvent(event: String, providerType: String, fallback: Bool, providerInfo: [String: String]) {
         var extras: [String: Any] = [:]
-        extras["providerType"] = providerType
+        extras["providerType"] = ProviderType.toNativeName(providerType)
         extras["fallback"] = fallback ? "true" : "false"
         extras["providerInfo"] = providerInfo
         sendEvent(
-            event:  "native_lp_cle_\(event)".lowercased(),
+            event: AuthEvent.toNativeName(event),
             extras: extras
         )
     }
@@ -219,7 +219,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         }
     }
     
-    public func cease() {
+    @objc public func cease() {
         socket?.disconnect()
         socketManager?.disconnect()
         socket = nil
@@ -235,7 +235,7 @@ public class OtplessSwiftLP: NSObject, URLSessionDelegate {
         completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
     }
     
-    public func setResponseDelegate(_ delegate: ConnectResponseDelegate) {
+    @objc public func setResponseDelegate(_ delegate: ConnectResponseDelegate) {
         self.delegate = delegate
         sendEvent(event: .callbackSet)
     }

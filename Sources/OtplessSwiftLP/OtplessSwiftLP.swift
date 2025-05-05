@@ -30,6 +30,7 @@ import os
     private var roomIdResolved = false
     
     internal private(set) var eventCounter = 1
+    private var isUsingCustomURL = false
     
     @objc public static let shared: OtplessSwiftLP = {
         DeviceInfoUtils.shared.initialise()
@@ -140,6 +141,7 @@ import os
         
         self.extras = extras
         self.timeout = timeout
+        self.isUsingCustomURL = false
         if roomRequestId.isEmpty {
             waitForRoomId(timeout: timeout) { [weak self] in
                 guard let self = self else { return }
@@ -148,6 +150,18 @@ import os
         } else {
             proceedToOpenSafariVC(vc: vc, options: options)
         }
+    }
+    
+    public func start(
+        baseUrl: String,
+        vc: UIViewController,
+        options: SafariCustomizationOptions? = nil,
+        extras: [String: String] = [:],
+        timeout: TimeInterval = 2
+    ) {
+        self.webviewBaseURL = baseUrl + "?appid=\(appId)"
+        self.isUsingCustomURL = true
+        start(vc: vc, options: options, extras: extras, timeout: timeout)
     }
     
     @objc public func userAuthEvent(event: String, providerType: String, fallback: Bool, providerInfo: [String: String]) {
@@ -162,7 +176,14 @@ import os
     }
 
     private func proceedToOpenSafariVC(vc: UIViewController, options: SafariCustomizationOptions?) {
-        let url = getLoadingURL(startUrl: webviewBaseURL + appId, isHeadless: false, loginUri: loginUri, roomId: self.roomRequestId)
+        
+        let url: URL?
+        if isUsingCustomURL {
+            // In case of custom url, appId is appended along with the baseUrl when start function is called.
+            url = getLoadingURL(startUrl: webviewBaseURL, loginUri: loginUri, roomId: self.roomRequestId)
+        } else {
+            url = getLoadingURL(startUrl: webviewBaseURL + appId, loginUri: loginUri, roomId: self.roomRequestId)
+        }
 
         guard let url = url else {
             print("Received null url from getLoadingURL")

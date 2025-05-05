@@ -8,7 +8,7 @@
 import Foundation
 import WebKit
 
-func getLoadingURL(startUrl: String, isHeadless: Bool, loginUri: String, roomId: String) -> URL? {
+func getLoadingURL(startUrl: String, loginUri: String, roomId: String) -> URL? {
     let inid = DeviceInfoUtils.shared.getInstallationId()
     let tsid = DeviceInfoUtils.shared.getTrackingSessionId()
     

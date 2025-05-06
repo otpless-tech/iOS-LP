@@ -47,8 +47,9 @@ import os
     
     @objc public func initialize(
         appId: String,
-        merchantLoginUri: String? = nil
-    ) {
+        merchantLoginUri: String? = nil,
+        onTraceIDReceived: @escaping (String) -> Void
+    ) { 
         sendEvent(event: .initializationStarted)
         self.appId = appId
         if let merchantLoginUri = merchantLoginUri {
@@ -59,6 +60,10 @@ import os
         
         NetworkMonitor.shared.startMonitoringCellular()
         NetworkMonitor.shared.startMonitoringNetwork()
+        
+        if let tsid = DeviceInfoUtils.shared.getTrackingSessionId() {
+            onTraceIDReceived(tsid)
+        }
         
         Task(priority: .medium, operation: { [weak self] in
             guard let self = self else { return }

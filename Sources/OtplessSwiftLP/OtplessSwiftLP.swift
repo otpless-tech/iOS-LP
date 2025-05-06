@@ -44,7 +44,7 @@ import os
     @objc public func enableSocketLogging() {
         self.shouldLog = true
     }
-    
+    // method for initialization
     @objc public func initialize(
         appId: String,
         merchantLoginUri: String? = nil,

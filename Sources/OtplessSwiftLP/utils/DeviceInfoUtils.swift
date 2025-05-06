@@ -124,7 +124,7 @@ class DeviceInfoUtils : @unchecked Sendable {
         params["hasGmailApp"] = hasGmailInstalled.description
         params["packageName"] = packageName
         params["platform"] = "iOS-LP"
-        params["sdkVersion"] = "1.0.6"
+        params["sdkVersion"] = "1.0.7"
         
         if let teamId = Bundle.main.infoDictionary?["AppIdentifierPrefix"] as? String {
             params["appleTeamId"] = teamId

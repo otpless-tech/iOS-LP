@@ -20,7 +20,7 @@ func sendEvent(event: String, extras: [String: Any] = [:]){
         var params = [String: String]()
         params["event_name"] = event
         params["platform"] = "iOS-LP"
-        params["sdk_version"] = "1.0.6"
+        params["sdk_version"] = "1.0.7"
         params["mid"] = OtplessSwiftLP.shared.appId
         params["event_timestamp"] = Utils.formatCurrentTimeToDateString()
         

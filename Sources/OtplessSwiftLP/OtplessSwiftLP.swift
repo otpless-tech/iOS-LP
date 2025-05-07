@@ -12,7 +12,8 @@ import os
     internal private(set) var socket: SocketIOClient? = nil
     internal private(set) var appId: String = ""
     private var loginUri: String = ""
-    private var webviewBaseURL = "https://otpless.com/rc5/appid/"
+    private var webviewBaseURL = ""
+    private var originalUri = "https://otpless.com/rc5/appid/"
     internal private(set) var apiRepository: ApiRepository = ApiRepository()
     private lazy var roomIdUseCase: RoomIDUseCase = {
         return RoomIDUseCase(apiRepository: apiRepository)
@@ -140,21 +141,9 @@ import os
     }
     
     public func start(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:], timeout: TimeInterval = 2) {
-        if connectionCouldNotBeMade() || !areExtrasValid(extras) {
-            return
-        }
-        
-        self.extras = extras
-        self.timeout = timeout
+        self.webviewBaseURL = originalUri
         self.isUsingCustomURL = false
-        if roomRequestId.isEmpty {
-            waitForRoomId(timeout: timeout) { [weak self] in
-                guard let self = self else { return }
-                self.proceedToOpenSafariVC(vc: vc, options: options)
-            }
-        } else {
-            proceedToOpenSafariVC(vc: vc, options: options)
-        }
+        processWithParams(vc: vc, options: options, extras: extras, timeout: timeout)
     }
     
     public func start(
@@ -166,7 +155,24 @@ import os
     ) {
         self.webviewBaseURL = baseUrl + "?appid=\(appId)"
         self.isUsingCustomURL = true
-        start(vc: vc, options: options, extras: extras, timeout: timeout)
+        processWithParams(vc: vc, options: options, extras: extras, timeout: timeout)
+    }
+    
+    private func processWithParams(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:], timeout: TimeInterval = 2){
+        if connectionCouldNotBeMade() || !areExtrasValid(extras) {
+            return
+        }
+        
+        self.extras = extras
+        self.timeout = timeout
+        if roomRequestId.isEmpty {
+            waitForRoomId(timeout: timeout) { [weak self] in
+                guard let self = self else { return }
+                self.proceedToOpenSafariVC(vc: vc, options: options)
+            }
+        } else {
+            proceedToOpenSafariVC(vc: vc, options: options)
+        }
     }
     
     @objc public func userAuthEvent(event: String, providerType: String, fallback: Bool, providerInfo: [String: String]) {

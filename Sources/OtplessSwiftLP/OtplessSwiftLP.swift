@@ -242,7 +242,6 @@ import os
     private func openSafariVC(from vc: UIViewController, urlString: String, options: SafariCustomizationOptions?) {
         DispatchQueue.main.async {
             guard let url = URL(string: urlString) else { return }
-            print(urlString)
             self.safariViewController = SFSafariViewController(url: url)
             
             guard let safariViewController = self.safariViewController else {

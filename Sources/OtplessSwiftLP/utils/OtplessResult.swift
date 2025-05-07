@@ -9,11 +9,12 @@ import Foundation
 
 @objc public class ErrorCodes: NSObject {
     @objc public static let USER_CANCELLED_EC = 10_000
-    @objc public static let INTERNET_EC = 9103
     @objc public static let EXCEPTION_EC = 11_000
 
     @objc public static let INVALID_PHONE_EC = 7102
     @objc public static let INVALID_EMAIL_EC = 7104
+    @objc public static let INTERNET_EC = 9103
+    @objc public static let NOT_INITIALIZED_EC = 9120
 }
 
 @objc public class OtplessResult: NSObject {
@@ -52,6 +53,30 @@ import Foundation
     /// Factory method for error
     @objc public static func error(errorType: String, errorCode: Int, errorMessage: String) -> OtplessResult {
         return OtplessResult(status: "error", errorType: errorType, errorCode: errorCode, errorMessage: errorMessage)
+    }
+    
+    @objc public static func successMap(from result: OtplessResult) -> [String: Any]? {
+        guard result.status == "success" else {
+            return nil
+        }
+
+        return [
+            "token": result.token,
+            "traceId": result.traceId ?? ""
+        ]
+    }
+    
+    @objc public static func errorMap(from result: OtplessResult) -> [String: Any]? {
+        guard result.status == "error" else {
+            return nil
+        }
+
+        return [
+            "errorCode": result.errorCode,
+            "errorMessage": result.errorMessage ?? "",
+            "errorType": result.errorType ?? "",
+            "traceId": result.traceId
+        ]
     }
 }
 

@@ -12,7 +12,8 @@ import os
     internal private(set) var socket: SocketIOClient? = nil
     internal private(set) var appId: String = ""
     private var loginUri: String = ""
-    private var webviewBaseURL = "https://otpless.com/rc5/appid/"
+    private var webviewBaseURL = ""
+    private var originalUri = "https://otpless.com/rc5/appid/"
     internal private(set) var apiRepository: ApiRepository = ApiRepository()
     private lazy var roomIdUseCase: RoomIDUseCase = {
         return RoomIDUseCase(apiRepository: apiRepository)
@@ -140,21 +141,12 @@ import os
     }
     
     public func start(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:], timeout: TimeInterval = 2) {
-        if connectionCouldNotBeMade() || !areExtrasValid(extras) {
+        if !isInitilized(){
             return
         }
-        
-        self.extras = extras
-        self.timeout = timeout
+        self.webviewBaseURL = originalUri
         self.isUsingCustomURL = false
-        if roomRequestId.isEmpty {
-            waitForRoomId(timeout: timeout) { [weak self] in
-                guard let self = self else { return }
-                self.proceedToOpenSafariVC(vc: vc, options: options)
-            }
-        } else {
-            proceedToOpenSafariVC(vc: vc, options: options)
-        }
+        processWithParams(vc: vc, options: options, extras: extras, timeout: timeout)
     }
     
     public func start(
@@ -164,9 +156,37 @@ import os
         extras: [String: String] = [:],
         timeout: TimeInterval = 2
     ) {
+        if !isInitilized(){
+            return
+        }
         self.webviewBaseURL = baseUrl + "?appid=\(appId)"
         self.isUsingCustomURL = true
-        start(vc: vc, options: options, extras: extras, timeout: timeout)
+        processWithParams(vc: vc, options: options, extras: extras, timeout: timeout)
+    }
+    
+    private func isInitilized() -> Bool {
+        if appId.isEmpty {
+            sendAuthResponse(OtplessResult.error(errorType: ErrorTypes.INITIATE, errorCode: ErrorCodes.NOT_INITIALIZED_EC, errorMessage: "Loginpage sdk not initialized"))
+            return false
+        }
+        return true
+    }
+    
+    private func processWithParams(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:], timeout: TimeInterval = 2){
+        if shouldThrowError(for: extras) {
+            return
+        }
+        
+        self.extras = extras
+        self.timeout = timeout
+        if roomRequestId.isEmpty {
+            waitForRoomId(timeout: timeout) { [weak self] in
+                guard let self = self else { return }
+                self.proceedToOpenSafariVC(vc: vc, options: options)
+            }
+        } else {
+            proceedToOpenSafariVC(vc: vc, options: options)
+        }
     }
     
     @objc public func userAuthEvent(event: String, providerType: String, fallback: Bool, providerInfo: [String: String]) {
@@ -222,7 +242,6 @@ import os
     private func openSafariVC(from vc: UIViewController, urlString: String, options: SafariCustomizationOptions?) {
         DispatchQueue.main.async {
             guard let url = URL(string: urlString) else { return }
-
             self.safariViewController = SFSafariViewController(url: url)
             
             guard let safariViewController = self.safariViewController else {
@@ -252,7 +271,6 @@ import os
         socketManager = nil
         safariViewController?.dismiss(animated: true)
         safariViewController = nil
-        roomRequestId = ""
         NetworkMonitor.shared.stopMonitoring()
         NetworkMonitor.shared.stopMonitoring()
     }
@@ -286,11 +304,14 @@ import os
                 if url.lastPathComponent.lowercased() == "close" {
                     if let queryItems = components.queryItems {
                         if let token = queryItems.first(where: { $0.name == "token" })?.value {
+                            let otplessResult = OtplessResult.success(token: token)
+                            sendEvent(event: .nativeSuccessResult, extras: OtplessResult.successMap(from: otplessResult) ?? [:])
                             delegate?.onConnectResponse(
-                                .success(token: token)
+                                otplessResult
                             )
                         } else if let error = queryItems.first(where: { $0.name == "error"})?.value {
                             let errorDict = Utils.base64ToJson(base64String: error)
+                            sendEvent(event: .nativeWebErrorResult, extras: errorDict)
                             let errorType = (errorDict["errorType"] as? String) ?? ErrorTypes.INITIATE
                             let errorMessage = (errorDict["errorMessage"] as? String) ?? ""
                             let errorCode = (errorDict["errorCode"] as? Int) ?? -1
@@ -365,6 +386,7 @@ extension OtplessSwiftLP: SFSafariViewControllerDelegate, UIAdaptivePresentation
 
 extension OtplessSwiftLP {
     func sendAuthResponse(_ response: OtplessResult) {
+        sendEvent(event: .nativeErrorResult, extras: OtplessResult .errorMap(from: response) ?? [:])
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onConnectResponse(response)
             self?.cease()

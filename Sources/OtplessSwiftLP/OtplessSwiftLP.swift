@@ -141,6 +141,9 @@ import os
     }
     
     public func start(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:], timeout: TimeInterval = 2) {
+        if !isInitilized(){
+            return
+        }
         self.webviewBaseURL = originalUri
         self.isUsingCustomURL = false
         processWithParams(vc: vc, options: options, extras: extras, timeout: timeout)
@@ -153,13 +156,24 @@ import os
         extras: [String: String] = [:],
         timeout: TimeInterval = 2
     ) {
+        if !isInitilized(){
+            return
+        }
         self.webviewBaseURL = baseUrl + "?appid=\(appId)"
         self.isUsingCustomURL = true
         processWithParams(vc: vc, options: options, extras: extras, timeout: timeout)
     }
     
+    private func isInitilized() -> Bool {
+        if appId.isEmpty {
+            sendAuthResponse(OtplessResult.error(errorType: ErrorTypes.INITIATE, errorCode: ErrorCodes.NOT_INITIALIZED_EC, errorMessage: "Loginpage sdk not initialized"))
+            return false
+        }
+        return true
+    }
+    
     private func processWithParams(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:], timeout: TimeInterval = 2){
-        if connectionCouldNotBeMade() || !areExtrasValid(extras) {
+        if shouldThrowError(for: extras) {
             return
         }
         
@@ -228,7 +242,7 @@ import os
     private func openSafariVC(from vc: UIViewController, urlString: String, options: SafariCustomizationOptions?) {
         DispatchQueue.main.async {
             guard let url = URL(string: urlString) else { return }
-
+            print(urlString)
             self.safariViewController = SFSafariViewController(url: url)
             
             guard let safariViewController = self.safariViewController else {
@@ -258,7 +272,6 @@ import os
         socketManager = nil
         safariViewController?.dismiss(animated: true)
         safariViewController = nil
-        roomRequestId = ""
         NetworkMonitor.shared.stopMonitoring()
         NetworkMonitor.shared.stopMonitoring()
     }
@@ -292,11 +305,14 @@ import os
                 if url.lastPathComponent.lowercased() == "close" {
                     if let queryItems = components.queryItems {
                         if let token = queryItems.first(where: { $0.name == "token" })?.value {
+                            let otplessResult = OtplessResult.success(token: token)
+                            sendEvent(event: .nativeWebErrorResult, extras: OtplessResult.successMap(from: otplessResult) ?? [:])
                             delegate?.onConnectResponse(
-                                .success(token: token)
+                                otplessResult
                             )
                         } else if let error = queryItems.first(where: { $0.name == "error"})?.value {
                             let errorDict = Utils.base64ToJson(base64String: error)
+                            sendEvent(event: .nativeWebErrorResult, extras: errorDict)
                             let errorType = (errorDict["errorType"] as? String) ?? ErrorTypes.INITIATE
                             let errorMessage = (errorDict["errorMessage"] as? String) ?? ""
                             let errorCode = (errorDict["errorCode"] as? Int) ?? -1
@@ -371,6 +387,7 @@ extension OtplessSwiftLP: SFSafariViewControllerDelegate, UIAdaptivePresentation
 
 extension OtplessSwiftLP {
     func sendAuthResponse(_ response: OtplessResult) {
+        sendEvent(event: .nativeErrorResult, extras: OtplessResult .errorMap(from: response) ?? [:])
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onConnectResponse(response)
             self?.cease()

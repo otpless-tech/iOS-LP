@@ -87,29 +87,44 @@ extension OtplessSwiftLP {
 }
 
 extension OtplessSwiftLP {
-    func connectionCouldNotBeMade() -> Bool {
+    
+    func shouldThrowError(for extras: [String: String]) -> Bool {
+        // Check network connectivity
         if !NetworkMonitor.shared.isConnectedToNetwork {
-            sendAuthResponse(OtplessResult.error(errorType: ErrorTypes.NETWORK, errorCode: ErrorCodes.INTERNET_EC, errorMessage: "Internet is not available"))
+            sendAuthResponse(OtplessResult.error(
+                errorType: ErrorTypes.NETWORK,
+                errorCode: ErrorCodes.INTERNET_EC,
+                errorMessage: "Internet is not available"
+            ))
             return true
         }
-        
+
+        // Validate extras only if relevant non-empty values are present
+        if let phone = extras["phone"], !phone.isEmpty,
+           let countryCode = extras["countryCode"], !countryCode.isEmpty {
+            if !isPhoneNumberWithCountryCodeValid(phoneNumber: phone, countryCode: countryCode) {
+                sendAuthResponse(OtplessResult.error(
+                    errorType: ErrorTypes.INITIATE,
+                    errorCode: ErrorCodes.INVALID_PHONE_EC,
+                    errorMessage: "Invalid phone number"
+                ))
+                return true
+            }
+        } else if let email = extras["email"], !email.isEmpty {
+            if !isEmailValid(email) {
+                sendAuthResponse(OtplessResult.error(
+                    errorType: ErrorTypes.INITIATE,
+                    errorCode: ErrorCodes.INVALID_EMAIL_EC,
+                    errorMessage: "Invalid email"
+                ))
+                return true
+            }
+        }
+
         return false
     }
-    
-    func areExtrasValid(_ extras: [String: String]) -> Bool {
-        if extras.isEmpty {
-            return true
-        }
-        
-        if let phoneNumber = extras["phone"] {
-            return isPhoneNumberWithCountryCodeValid(phoneNumber: phoneNumber, countryCode: extras["countryCode"] ?? "")
-        } else if let email = extras["email"] {
-            return isEmailValid(email)
-        }
-        
-        return true
-    }
-    
+
+    // Helper functions
     private func isEmailValid(_ email: String) -> Bool {
         if email.isEmpty {
             return false
@@ -118,17 +133,15 @@ extension OtplessSwiftLP {
         let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
     }
-    
+
     private func isPhoneNumberWithCountryCodeValid(phoneNumber: String, countryCode: String) -> Bool {
         if phoneNumber.isEmpty || countryCode.isEmpty {
             return false
         }
-        
-        // Check if the phone number starts with the country code
         let fullPhoneNumber = countryCode.replacingOccurrences(of: "+", with: "") + phoneNumber
-        let phoneNumberRegex = "^[0-9]+$"  // Basic check for numeric characters only
+        let phoneNumberRegex = "^[0-9]+$"
         let phoneNumberPredicate = NSPredicate(format: "SELF MATCHES %@", phoneNumberRegex)
-        
         return phoneNumberPredicate.evaluate(with: fullPhoneNumber)
     }
+
 }

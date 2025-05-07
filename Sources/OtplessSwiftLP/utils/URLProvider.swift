@@ -26,13 +26,18 @@ func getLoadingURL(startUrl: String, loginUri: String, roomId: String) -> URL? {
     let queryItemLoginUri = URLQueryItem(name: "otpl_login_uri", value: loginUri)
     let queryItemWhatsApp = URLQueryItem(name: "otpl_instl_wa", value: DeviceInfoUtils.shared.hasWhatsApp ? "true" : "false")
     let queryItemRoomID = URLQueryItem(name: "otpless_connect_id", value: roomId)
+    var type = "NOT_CONNECTED"
+    if !roomId.isEmpty {
+        type = "CONNECTED"
+    }
+    let queryItemType = URLQueryItem(name: "type", value: type)
     let queryItemPlatform = URLQueryItem(name: "otpl_platform", value: "iOS")
     let queryItemSDKType = URLQueryItem(name: "otpl_sdk_type", value: "lp")
     
     if urlComponents.queryItems != nil {
-        urlComponents.queryItems?.append(contentsOf: [queryItemWhatsApp, queryItemLoginUri, queryItemRoomID, queryItemPlatform, queryItemSDKType])
+        urlComponents.queryItems?.append(contentsOf: [queryItemWhatsApp, queryItemLoginUri, queryItemType,queryItemRoomID, queryItemPlatform, queryItemSDKType])
     } else {
-        urlComponents.queryItems = [queryItemWhatsApp, queryItemLoginUri, queryItemRoomID, queryItemPlatform, queryItemSDKType]
+        urlComponents.queryItems = [queryItemWhatsApp, queryItemLoginUri,queryItemType, queryItemRoomID, queryItemPlatform, queryItemSDKType]
     }
     
     if let inid = inid {
@@ -50,16 +55,18 @@ func getLoadingURL(startUrl: String, loginUri: String, roomId: String) -> URL? {
     urlComponents.queryItems?.append(queryItemCellularDataEnabled)
     
     if !OtplessSwiftLP.shared.extras.isEmpty {
-        let email = OtplessSwiftLP.shared.extras["email"] ?? ""
+        var extras = OtplessSwiftLP.shared.extras  // Make a mutable copy
+        let email = extras["email"] ?? ""
         var base64Params: String = ""
+
         if !email.isEmpty {
-            base64Params = Utils.base64EncodedString(from: OtplessSwiftLP.shared.extras)
-        } else if let phone = OtplessSwiftLP.shared.extras["phone"],
-                  let countrCode = OtplessSwiftLP.shared.extras["countryCode"] {
-            let newExtras = [
-                "phone": "+\(countrCode)\(phone)"
-            ]
-            base64Params = Utils.base64EncodedString(from: newExtras)
+            // Use the full extras map if email is present
+            base64Params = Utils.base64EncodedString(from: extras)
+        } else if let phone = extras["phone"], !phone.isEmpty,
+                  let countryCode = extras["countryCode"], !countryCode.isEmpty {
+            // Overwrite the phone key with combined country code + phone
+            extras["phone"] = "+\(countryCode)\(phone)"
+            base64Params = Utils.base64EncodedString(from: extras)
         }
 
         if !base64Params.isEmpty {

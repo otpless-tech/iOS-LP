@@ -121,6 +121,10 @@ enum EventConstants: String {
     case snaUrlRedirection = "native_lp_sna_url_redirection"
     case snaUrlResponse = "native_lp_sna_url_response"
     case clientCommit = "native_lp_client_commit"
+    
+    case nativeErrorResult = "native_lp_error_result"
+    case nativeWebErrorResult = "native_lp_web_error_result"
+    case nativeSuccessResult = "native_lp_success_result"
 }
 
 @objcMembers

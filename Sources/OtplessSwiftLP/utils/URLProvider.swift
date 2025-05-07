@@ -56,22 +56,15 @@ func getLoadingURL(startUrl: String, loginUri: String, roomId: String) -> URL? {
     
     if !OtplessSwiftLP.shared.extras.isEmpty {
         var extras = OtplessSwiftLP.shared.extras  // Make a mutable copy
-        let email = extras["email"] ?? ""
         var base64Params: String = ""
 
-        if !email.isEmpty {
-            // Use the full extras map if email is present
-            base64Params = Utils.base64EncodedString(from: extras)
-        } else if let phone = extras["phone"], !phone.isEmpty,
+        if let phone = extras["phone"], !phone.isEmpty,
                   let countryCode = extras["countryCode"], !countryCode.isEmpty {
             // Overwrite the phone key with combined country code + phone
             extras["phone"] = "+\(countryCode)\(phone)"
-            base64Params = Utils.base64EncodedString(from: extras)
         }
-
-        if !base64Params.isEmpty {
-            urlComponents.queryItems?.append(URLQueryItem(name: "otpl_extras", value: base64Params))
-        }
+        base64Params = Utils.base64EncodedString(from: extras)
+        urlComponents.queryItems?.append(URLQueryItem(name: "otpl_extras", value: base64Params))
     }
     
     return urlComponents.url

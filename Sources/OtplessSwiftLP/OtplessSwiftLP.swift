@@ -305,7 +305,7 @@ import os
                     if let queryItems = components.queryItems {
                         if let token = queryItems.first(where: { $0.name == "token" })?.value {
                             let otplessResult = OtplessResult.success(token: token)
-                            sendEvent(event: .nativeWebErrorResult, extras: OtplessResult.successMap(from: otplessResult) ?? [:])
+                            sendEvent(event: .nativeSuccessResult, extras: OtplessResult.successMap(from: otplessResult) ?? [:])
                             delegate?.onConnectResponse(
                                 otplessResult
                             )

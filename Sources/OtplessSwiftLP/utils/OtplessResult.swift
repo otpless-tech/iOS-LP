@@ -26,7 +26,7 @@ import Foundation
     @objc public let token: String?
 
     /// Always present
-    @objc public let traceId: String = DeviceInfoUtils.shared.getTrackingSessionId() ?? ""
+    @objc public let traceId: String = ResourceManager.shared.tsId ?? ""
 
     /// Present if status == "error"
     @objc public let errorType: String?

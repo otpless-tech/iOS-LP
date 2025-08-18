@@ -7,7 +7,7 @@
 
 
 import SafariServices
-import UIKit
+//import UIKit
 
 public struct SafariCustomizationOptions {
     public var preferredBarTintColor: UIColor?

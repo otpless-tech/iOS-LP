@@ -1,6 +1,7 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 
+
 import UIKit
 import SocketIO
 import SafariServices
@@ -14,7 +15,7 @@ import os
     private var loginUri: String = ""
     private var webviewBaseURL = ""
     private var originalUri = "https://otpless.com/rc5/appid/"
-    internal private(set) var apiRepository: ApiRepository = ApiRepository()
+    internal private(set) var apiRepository: ApiRepository = ApiRepository.shared
     private lazy var roomIdUseCase: RoomIDUseCase = {
         return RoomIDUseCase(apiRepository: apiRepository)
     }()
@@ -22,16 +23,11 @@ import os
     internal private(set) weak var delegate: ConnectResponseDelegate?
     private var safariViewController: SFSafariViewController?
     
-    private var shouldLog = false
     
-    internal private(set) var extras: [String: String] = [:]
-    private var timeout: TimeInterval = 2
-    
-    private var roomIdContinuation: CheckedContinuation<Void, Never>?
-    private var roomIdResolved = false
-    
-    internal private(set) var eventCounter = 1
     private var isUsingCustomURL = false
+    
+    @objc weak var otplessView: OtplessView?
+    private weak var merchantVC: UIViewController?
     
     @objc public static let shared: OtplessSwiftLP = {
         DeviceInfoUtils.shared.initialise()
@@ -42,16 +38,14 @@ import os
         super.init()
     }
     
-    @objc public func enableSocketLogging() {
-        self.shouldLog = true
-    }
     // method for initialization
     @objc public func initialize(
         appId: String,
         merchantLoginUri: String? = nil,
         onTraceIDReceived: @escaping (String) -> Void
-    ) { 
-        sendEvent(event: .initializationStarted)
+    ) {
+        // todo send event
+//        sendEvent(event: .initializationStarted)
         self.appId = appId
         if let merchantLoginUri = merchantLoginUri {
             self.loginUri = merchantLoginUri
@@ -62,82 +56,8 @@ import os
         NetworkMonitor.shared.startMonitoringCellular()
         NetworkMonitor.shared.startMonitoringNetwork()
         
-        if let tsid = DeviceInfoUtils.shared.getTrackingSessionId() {
-            onTraceIDReceived(tsid)
-        }
-        
-        Task(priority: .medium, operation: { [weak self] in
-            guard let self = self else { return }
-            self.roomRequestId = await self.roomIdUseCase.invoke(appId: appId, isRetry: false) ?? ""
+        onTraceIDReceived(ResourceManager.shared.tsId )
 
-            if !self.roomRequestId.isEmpty {
-                if self.roomIdResolved == false {
-                    self.roomIdResolved = true
-                    self.roomIdContinuation?.resume()
-                    self.roomIdContinuation = nil
-                }
-            }
-        })
-
-    }
-    
-    func setupSocketEvents() {
-        guard let socket = socket else {
-            sendEvent(event: .connectConnection, extras: [
-                "reason": "Got null socket instance."
-            ])
-            os_log("OtplessConnect: Could not create socket connection")
-            return
-        }
-        
-        socket.on(clientEvent: .connect) { [weak self] data, ack in
-            sendEvent(event: .connectConnection, extras: [
-                "connection_status": "connected",
-                "api_success": "true"
-            ])
-            if self?.shouldLog == true {
-                os_log("OtplessConnect: socket connected")
-            }
-        }
-        
-        socket.on(clientEvent: .disconnect) { [weak self] data, ack in
-            let reasonString: String
-            if data.isEmpty {
-                reasonString = "No data"
-            } else if data.count == 1 {
-                reasonString = "\(data[0])"
-            } else {
-                reasonString = data.map { "\($0)" }.joined(separator: ", ")
-            }
-            
-            sendEvent(event: .connectConnection, extras: [
-                "connection_status": "connect_error",
-                "api_success": "false",
-                "reason": reasonString
-            ])
-            if self?.shouldLog == true {
-                os_log("OtplessConnect: socket disconnected")
-            }
-        }
-        
-        socket.on("message") { [weak self] (data, ack) in
-            if let parsedEvent = SocketEventParser.parseEvent(from: data) {
-                self?.handleParsedEvent(parsedEvent)
-            } else {
-                if self?.shouldLog == true {
-                    print("OtplessConnect: Failed to parse event \(data)")
-                }
-            }
-            let dataString: String
-            if data.isEmpty {
-                dataString = "No data"
-            } else if data.count == 1 {
-                dataString = "\(data[0])"
-            } else {
-                dataString = data.map { "\($0)" }.joined(separator: ", ")
-            }
-            sendEvent(event: .connectEventsReceived, extras: ["request": dataString])
-        }
     }
     
     public func start(vc: UIViewController, options: SafariCustomizationOptions? = nil, extras: [String: String] = [:], timeout: TimeInterval = 2) {
@@ -199,6 +119,45 @@ import os
             extras: extras
         )
     }
+    
+    func addHeadlessViewToMerchantVC() {
+        if (merchantVC != nil && merchantVC?.view != nil) {
+            if otplessView == nil || otplessView?.superview == nil {
+                let vcView = merchantVC?.view
+                DispatchQueue.main.async {
+                    if vcView != nil {
+                        
+                        var headlessView: OtplessView
+                        headlessView = OtplessView(headlessRequest: headlessRequest)
+                        self.otplessView = headlessView
+                        
+                        OtplessHelper.sendEvent(event: EventConstants.REQUEST_PUSHED_WEB)
+                        
+                        if let view = vcView {
+                            if let lastSubview = view.subviews.last {
+                                view.insertSubview(headlessView, aboveSubview: lastSubview)
+                            } else {
+                                view.addSubview(headlessView)
+                            }
+                        }
+                        
+                        if #available(iOS 11.0, *) {
+                            if let headlessView = self.otplessView,
+                               let vcView = self.merchantVC?.view {
+                                
+                                headlessView.setConstraints([
+                                    headlessView.widthAnchor.constraint(equalToConstant: UIScreen.main.bounds.width),
+                                    headlessView.heightAnchor.constraint(equalToConstant: headlessView.getViewHeight()),
+                                    headlessView.centerXAnchor.constraint(equalTo: vcView.centerXAnchor),
+                                    headlessView.bottomAnchor.constraint(equalTo: vcView.bottomAnchor)
+                                ])
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private func proceedToOpenSafariVC(vc: UIViewController, options: SafariCustomizationOptions?) {
         
@@ -219,24 +178,7 @@ import os
         openSafariVC(from: vc, urlString: url.absoluteString, options: options)
     }
 
-    private func waitForRoomId(timeout: TimeInterval, completion: @escaping () -> Void) {
-        roomIdResolved = false
-
-        Task {
-            await withCheckedContinuation { continuation in
-                self.roomIdContinuation = continuation
-
-                Task {
-                    try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                    if !roomIdResolved {
-                        roomIdResolved = true
-                        continuation.resume()
-                    }
-                }
-            }
-            completion()
-        }
-    }
+    
 
     
     private func openSafariVC(from vc: UIViewController, urlString: String, options: SafariCustomizationOptions?) {

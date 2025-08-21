@@ -2,40 +2,36 @@
 //  DeviceInfoUtils.swift
 //  OtplessSwiftLP
 //
-//  Created by Sparsh on 19/03/25.
 //
 
 import Foundation
-import UIKit
+
 import Foundation
 import CommonCrypto
 import WebKit
 
 
-class DeviceInfoUtils : @unchecked Sendable {
+internal class DeviceInfoUtils : @unchecked Sendable {
     static let shared: DeviceInfoUtils = {
         let instance = DeviceInfoUtils()
         return instance
     }()
-    public var isIntialised = false
+    
+    private init() {
+    }
+    
     public var hasWhatsApp : Bool = false
     public var hasGmailInstalled : Bool = false
     public var hasOTPLESSInstalled : Bool = false
     public var appHash = ""
-    private var inid: String?
-    private var tsid: String?
     private var deviceInfo: [String: String]? = nil
     private var packageName: String = ""
     
     func initialise () {
-        if (!isIntialised){
-            hasWhatsApp = isWhatsappInstalled()
-            hasGmailInstalled = isGmailInstalled()
-            hasOTPLESSInstalled = isOTPLESSInstalled()
-            appHash = getAppHash() ?? "noapphash"
-            isIntialised = true
-            generateTrackingId()
-        }
+        hasWhatsApp = isWhatsappInstalled()
+        hasGmailInstalled = isGmailInstalled()
+        hasOTPLESSInstalled = isOTPLESSInstalled()
+        appHash = getAppHash() ?? "noapphash"
     }
 
     func getAppHash() -> String? {
@@ -78,7 +74,6 @@ class DeviceInfoUtils : @unchecked Sendable {
     }
     
     func getAppInfo() -> [String: String] {
-        initialise()
         var udid : String!
         var appVersion : String!
         var manufacturer : String!
@@ -112,11 +107,12 @@ class DeviceInfoUtils : @unchecked Sendable {
         if model != nil {
             params["model"] = model
         }
-        if inid != nil {
-            params["inid"] = inid
+        
+        if let inid != ResourceManager.shared.inid {
+            params["inid"] = inId
         }
-        if tsid != nil {
-            params["tsid"] = tsid
+        if let tsid != ResourceManager.shared.tsid {
+            params["tsid"] = tsId
         }
         params["osVersion"] = os.majorVersion.description + "." + os.minorVersion.description
         params["hasWhatsapp"] = hasWhatsApp.description
@@ -135,41 +131,6 @@ class DeviceInfoUtils : @unchecked Sendable {
         return params
     }
     
-    func generateTrackingId() {
-        if let savedInid: String = SecureStorage.shared.getFromUserDefaults(key: Constants.INID_KEY, defaultValue: ""),
-           !savedInid.isEmpty {
-            self.inid = savedInid
-        } else {
-            inid = generateId(withTimeStamp: true)
-            SecureStorage.shared.saveToUserDefaults(key: Constants.INID_KEY, value: inid!)
-        }
-        
-        if tsid == nil {
-            tsid = generateId(withTimeStamp: true)
-        }
-    }
-    
-    private func generateId(withTimeStamp: Bool) -> String {
-        let uuid = UUID().uuidString
-        if !withTimeStamp {
-            return uuid
-        }
-        let timestamp = Int(Date().timeIntervalSince1970)
-        let uniqueString = "\(uuid)-\(timestamp)"
-        return uniqueString
-    }
-    
-    func getInstallationId() -> String? {
-        if inid != nil {
-            return inid
-        }
-        return SecureStorage.shared.getFromUserDefaults(key: Constants.INID_KEY, defaultValue: "")
-    }
-    
-    func getTrackingSessionId() -> String? {
-        return tsid
-    }
-
     func getDeviceInfoDict() -> [String: String] {
         if let deviceInfo = deviceInfo {
             return deviceInfo

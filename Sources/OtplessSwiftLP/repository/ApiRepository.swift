@@ -7,9 +7,15 @@
 
 import Foundation
 
-class ApiRepository {
+internal final class ApiRepository {
+    
+    static let shared = ApiRepository()
+    
     private let apiManager = ApiManager()
     private let cellularConnectionManager = CellularConnectionManager()
+    
+    private init() {
+    }
     
     func getRoomId(headers: [String: String]) async -> String? {
         do {
@@ -27,4 +33,15 @@ class ApiRepository {
         }
         cellularConnectionManager.open(url: url, operators: nil, completion: completion)
     }
+    
+    func pushEvents(params: [String: String], completion: @escaping (ApiResponse<EmptyResponse>) -> Void) {
+        var components = URLComponents(string:"https://d33ftqsb9ygkos.cloudfront.net/prod/appevent")!
+        components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
+        guard let url = components.url?.absoluteString else {
+            return
+        }
+        apiManager.get(from: url, completion: completion)
+    }
 }
+
+internal struct EmptyResponse: Decodable {}

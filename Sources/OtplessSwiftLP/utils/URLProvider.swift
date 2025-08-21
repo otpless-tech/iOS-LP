@@ -26,10 +26,8 @@ func getLoadingURL(startUrl: String, loginUri: String, roomId: String) -> URL? {
     let queryItemLoginUri = URLQueryItem(name: "otpl_login_uri", value: loginUri)
     let queryItemWhatsApp = URLQueryItem(name: "otpl_instl_wa", value: DeviceInfoUtils.shared.hasWhatsApp ? "true" : "false")
     let queryItemRoomID = URLQueryItem(name: "otpless_connect_id", value: roomId)
-    var type = "NOT_CONNECTED"
-    if !roomId.isEmpty {
-        type = "CONNECTED"
-    }
+    var type = "JSN"
+    
     let queryItemType = URLQueryItem(name: "type", value: type)
     let queryItemPlatform = URLQueryItem(name: "otpl_platform", value: "iOS")
     let queryItemSDKType = URLQueryItem(name: "otpl_sdk_type", value: "lp")

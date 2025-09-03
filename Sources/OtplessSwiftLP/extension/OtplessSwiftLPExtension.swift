@@ -67,19 +67,19 @@ extension OtplessSwiftLP {
     }
     
     func sendSocketMessage(_ messageName: String = "message", eventName: String, eventValue: Any) {
-        guard let socket = socket else {
-            return
-        }
-        
+//        guard let socket = socket else {
+//            return
+//        }
+//        
         let eventDict = [
             "event_name": eventName,
             "event_value": eventValue
         ]
-        socket.emit(
-            messageName,
-            eventDict
-        )
-        
+//        socket.emit(
+//            messageName,
+//            eventDict
+//        )
+//        
         sendEvent(event: .connectEventsSent, extras: [
             "response": Utils.convertDictionaryToString(eventDict)
         ])
@@ -94,7 +94,7 @@ extension OtplessSwiftLP {
             sendAuthResponse(OtplessResult.error(
                 errorType: ErrorTypes.NETWORK,
                 errorCode: ErrorCodes.INTERNET_EC,
-                errorMessage: "Internet is not available"
+                errorMessage:ErrorMessages.InternetNotAvailable
             ))
             return true
         }
@@ -106,7 +106,7 @@ extension OtplessSwiftLP {
                 sendAuthResponse(OtplessResult.error(
                     errorType: ErrorTypes.INITIATE,
                     errorCode: ErrorCodes.INVALID_PHONE_EC,
-                    errorMessage: "Invalid phone number"
+                    errorMessage: ErrorMessages.InvalidPhoneNumber
                 ))
                 return true
             }
@@ -115,7 +115,7 @@ extension OtplessSwiftLP {
                 sendAuthResponse(OtplessResult.error(
                     errorType: ErrorTypes.INITIATE,
                     errorCode: ErrorCodes.INVALID_EMAIL_EC,
-                    errorMessage: "Invalid email"
+                    errorMessage:ErrorMessages.InvalidEmail
                 ))
                 return true
             }

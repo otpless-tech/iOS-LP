@@ -59,15 +59,6 @@ class NativeWebBridge {
     }
 }
 
-
-extension NativeWebBridge {
-    func setHeadlessRequest(webview: WKWebView) {
-        if self.webView == nil {
-            self.webView = webview
-        }
-    }
-}
-
 public protocol BridgeDelegate: AnyObject {
     func dismissView()
 }

@@ -80,29 +80,6 @@ extension NativeWebBridge {
         }
     }
     
-//    private func parseHeadlessResponse(withResponse response: [String: Any]?) {
-//        let responseStr = response?["response"] as? String ?? ""
-//        if responseStr.isEmpty {
-//            Otpless.sharedInstance.stopOtplessAndSendEmptyResponseError()
-//            return
-//        }
-//        
-//        let responseDict = Utils.convertToDictionary(text: responseStr)
-//        let closeView = response?["closeView"] as? Int == 1
-//        let responseType = responseDict?["responseType"] as? String ?? ""
-//        
-//        let statusCode = responseDict?["statusCode"] as? Int ?? 0
-//        let resp = (responseDict?["response"] as? [String: Any])
-//        
-//        let headlessResponse = HeadlessResponse(
-//            responseType: responseType,
-//            responseData: resp,
-//            statusCode: statusCode
-//        )
-//        
-//        Otpless.sharedInstance.sendHeadlessResponse(response: headlessResponse, closeView: closeView, sendWebResponseEvent: true)
-//    }
-    
     private func forceOpenURLOverMobileNetwork(url: URL, completion: @escaping ([String: Any]) -> Void) {
         if #available(iOS 12.0, *) {
             let cellularConnectionManager = CellularConnectionManager()

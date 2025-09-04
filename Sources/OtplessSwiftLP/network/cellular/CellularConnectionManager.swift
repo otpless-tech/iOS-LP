@@ -51,7 +51,7 @@ final class CellularConnectionManager: @unchecked Sendable {
             completion(convertNetworkErrorToDictionary(err: NetworkError.other("No scheme or host found")))
             return
         }
-        
+        sendEvent(event: .snaUrlInitiated)
         print("Connection timeout is \(CONNECTION_TIME_OUT)")
         
         // This closure will be called on main thread

@@ -20,7 +20,7 @@ func sendEvent(event: String, extras: [String: Any] = [:]){
         var params = [String: String]()
         params["event_name"] = event
         params["platform"] = "iOS-LP"
-        params["sdk_version"] = "1.0.8"
+        params["sdk_version"] = "1.0.9"
         params["mid"] = OtplessSwiftLP.shared.appId
         params["event_timestamp"] = Utils.formatCurrentTimeToDateString()
         
@@ -121,10 +121,17 @@ enum EventConstants: String {
     case snaUrlRedirection = "native_lp_sna_url_redirection"
     case snaUrlResponse = "native_lp_sna_url_response"
     case clientCommit = "native_lp_client_commit"
-    
     case nativeErrorResult = "native_lp_error_result"
     case nativeWebErrorResult = "native_lp_web_error_result"
     case nativeSuccessResult = "native_lp_success_result"
+    case js_inject = "native_js_inject"
+    case load_url = "native_load_url"
+    case webview_loading_error = "native_webview_loading_error"
+    case webview_url_load_success = "native_webview_url_load_success"
+    case webview_added = "native_webview_added"
+    case webview_loading_start = "native_webview_loading_start"
+    case webview_open = "native_webview_open"
+    case webview_request_recieved = "native_webview_request_received"
 }
 
 @objcMembers

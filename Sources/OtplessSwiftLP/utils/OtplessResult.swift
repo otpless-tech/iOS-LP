@@ -17,6 +17,17 @@ import Foundation
     @objc public static let NOT_INITIALIZED_EC = 9120
 }
 
+@objc public class ErrorMessages: NSObject {
+    @objc public static let InternetNotAvailable = "Internet is not available"
+    @objc public static let InvalidPhoneNumber = "Invalid phone number"
+    @objc public static let InvalidEmail = "Invalid email"
+    @objc public static let SDKNotInitialized = "Loginpage sdk not initialized"
+    @objc public static let UnknownErrorMessage = "Unknown error"
+    @objc public static let UnknownUrlError = "Unknown url error"
+    @objc public static let UnknownResponse = "Unknown response"
+    @objc public static let RequestLoadError = "Request load error"
+}
+
 @objc public class OtplessResult: NSObject {
 
     /// "success" or "error"
@@ -24,6 +35,12 @@ import Foundation
 
     /// Present if status == "success"
     @objc public let token: String?
+    
+    /// Present if status == "success"
+    @objc public let sessionTokenJWT: String?
+    
+    /// Present if status == "success"
+    @objc public let fireBaseToken: String?
 
     /// Always present
     @objc public let traceId: String = DeviceInfoUtils.shared.getTrackingSessionId() ?? ""
@@ -35,19 +52,23 @@ import Foundation
 
     private init(status: String,
                  token: String? = nil,
+                 sessionTokenJWT: String? = nil,
+                 fireBaseToken: String? = nil,
                  errorType: String? = nil,
                  errorCode: Int = 0,
                  errorMessage: String? = nil) {
         self.status = status
         self.token = token
+        self.sessionTokenJWT = sessionTokenJWT
+        self.fireBaseToken = fireBaseToken
         self.errorType = errorType
         self.errorCode = errorCode
         self.errorMessage = errorMessage
     }
 
     /// Factory method for success
-    @objc public static func success(token: String) -> OtplessResult {
-        return OtplessResult(status: "success", token: token)
+    @objc public static func success(token: String, sessionTokenJWT: String? = nil, fireBaseToken: String? = nil) -> OtplessResult {
+        return OtplessResult(status: "success", token: token, sessionTokenJWT: sessionTokenJWT, fireBaseToken: fireBaseToken)
     }
 
     /// Factory method for error
@@ -62,6 +83,8 @@ import Foundation
 
         return [
             "token": result.token,
+            "sessionTokenJWT": result.sessionTokenJWT,
+            "fireBaseToken": result.fireBaseToken,
             "traceId": result.traceId ?? ""
         ]
     }

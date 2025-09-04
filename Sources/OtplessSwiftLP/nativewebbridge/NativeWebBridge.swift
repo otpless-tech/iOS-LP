@@ -27,8 +27,7 @@ class NativeWebBridge {
                     nativeKey = key
                 }
             }
-            //OtplessLogger.log(dictionary: dataDict ?? [:], type: "Data from web")
-            
+            sendEvent(event: .webview_request_recieved, extras: dataDict ?? [:])
             switch nativeKey {
             case 7:
                 // open deeplink
@@ -40,15 +39,9 @@ class NativeWebBridge {
                 // get app info
                 self.getAppInfo()
                 break
-            case 11:
-                // verification status call key 11
-                if let response = dataDict?["response"] as? [String: Any] {
-                    self.responseVerificationStatus(forResponse: response, delegate: delegate)
-                }
-                break
             case 15:
-                OtplessEventManager.shared.ingestFromWeb(dataDict ?? [:])
                 // send event
+                sendAuthEvents(response: dataDict ?? [:])
                 break
             case 42:
                 // perform silent auth

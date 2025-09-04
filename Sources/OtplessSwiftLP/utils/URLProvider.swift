@@ -30,11 +30,13 @@ func getLoadingURL(startUrl: String, loginUri: String) -> URL? {
     let queryItemPlatform = URLQueryItem(name: "otpl_platform", value: "iOS")
     let queryItemSDKType = URLQueryItem(name: "otpl_sdk_type", value: "lp")
     let queryItemCustomResponseType = URLQueryItem(name: "envoiSupported", value: "true")
+    let appInfo = DeviceInfoUtils.shared.getAppInfo()
+    let queryItemAppInfoType = URLQueryItem(name: "otpl_appinfo", value: Utils.base64UrlEncode(base64String: try! JSONSerialization.data(withJSONObject: appInfo, options: []).base64EncodedString()))
     
     if urlComponents.queryItems != nil {
-        urlComponents.queryItems?.append(contentsOf: [queryItemWhatsApp, queryItemLoginUri, queryItemType, queryItemPlatform, queryItemSDKType,queryItemCustomResponseType])
+        urlComponents.queryItems?.append(contentsOf: [queryItemWhatsApp, queryItemLoginUri, queryItemType, queryItemPlatform, queryItemSDKType,queryItemCustomResponseType,queryItemAppInfoType])
     } else {
-        urlComponents.queryItems = [queryItemWhatsApp, queryItemLoginUri,queryItemType, queryItemPlatform, queryItemSDKType,queryItemCustomResponseType]
+        urlComponents.queryItems = [queryItemWhatsApp, queryItemLoginUri,queryItemType, queryItemPlatform, queryItemSDKType,queryItemCustomResponseType,queryItemAppInfoType]
     }
     
     if let inid = inid {

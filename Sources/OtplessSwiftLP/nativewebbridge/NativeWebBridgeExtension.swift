@@ -29,21 +29,11 @@ extension NativeWebBridge {
         loadScript(function: "onAppInfoResult", message: jsonStr)
     }
     
-    
-    /// Key 11 - login page verification status
-    func responseVerificationStatus(forResponse response: [String : Any]?, delegate: BridgeDelegate?) {
-        var responseParams =  [String : Any]()
-        responseParams["data"] = response
-//        let otplessResponse = OtplessResponse(responseString: nil, responseData: responseParams)
-//        Otpless.sharedInstance.delegate?.onResponse(response: otplessResponse)
-//        delegate?.dismissView()
-//        OtplessHelper.sendEvent(event: EventConstants.LOGINPAGE_RESPONSE_WEB)
-    }
-    
      
     /// Key 15 - Send event
-    func sendEvent() {
+    func sendAuthEvents(response:[String:Any]) {
         // TODO
+        OtplessEventManager.shared.ingestFromWeb(response ?? [:])
     }
 
     /// Key 42 - Perform SNA (Silent Network Auth)
@@ -54,15 +44,21 @@ extension NativeWebBridge {
                 completion: { silentAuthResponse in
                     let jsonStr = Utils.convertDictionaryToString(silentAuthResponse)
                     self.loadScript(function: "onCellularNetworkResult", message: jsonStr)
-                    //OtplessHelper.sendEvent(event: EventConstants.SNA_CALLBACK_RESULT)
+                    sendEvent(event: .snaUrlResponse, extras: [
+                        "response": jsonStr
+                    ])
                 }
             )
         } else {
             // handle case when unable to create URL from string
             self.loadErrorInScript(function: "onCellularNetworkResult", error: "url_parsing_fail", errorDescription: "Unable to parse url from string.")
+            sendEvent(event: .snaUrlResponse, extras: [
+                "response": ["error":"url_parsing_fail"]
+            ])
         }
     }
     
+    /// Key 69 - Response Callback
     func parseScriptResponse(response:[String:Any]){
         OtplessSwiftLP.shared.parseResponse(response: response ?? [:])
     }

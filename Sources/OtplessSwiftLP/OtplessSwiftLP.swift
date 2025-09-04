@@ -138,7 +138,7 @@ import os
     private func addLoginPageToMerchantVC(urlString: String) {
         // Bail if container view is missing or the view is already added
         guard let containerView = merchantVC?.view, otplessView?.superview == nil else { return }
-
+        sendEvent(event: .webview_added)
         DispatchQueue.main.async {
             let loginPage = OtplessView(webURL: urlString)
             self.otplessView = loginPage
@@ -168,7 +168,6 @@ import os
 
     
     @objc public func cease() {
-        NetworkMonitor.shared.stopMonitoring()
         NetworkMonitor.shared.stopMonitoring()
     }
     
@@ -208,20 +207,19 @@ import os
                 if url.lastPathComponent.lowercased() == "close" {
                     if let queryItems = components.queryItems {
                         if let token = queryItems.first(where: { $0.name == "token" })?.value {
-                            let otplessResult = OtplessResult.success(token: token)
-                            sendEvent(event: .nativeSuccessResult, extras: OtplessResult.successMap(from: otplessResult) ?? [:])
-                            delegate?.onConnectResponse(
-                                otplessResult
-                            )
-                        } else if let error = queryItems.first(where: { $0.name == "error"})?.value {
+                            generateLegacyTokenSuccessResult(token: token)
+                        } else if let response = queryItems.first(where: { $0.name == "response"})?.value {
+                            let responseDict = Utils.base64ToJson(base64String: response)
+                            if !responseDict.isEmpty,
+                               let token = responseDict["token"] as? String,
+                               !token.isEmpty {
+                                generateSuccessResult(token: token, responseJson: responseDict)
+                            }
+                            
+                        }
+                        else if let error = queryItems.first(where: { $0.name == "error"})?.value {
                             let errorDict = Utils.base64ToJson(base64String: error)
-                            sendEvent(event: .nativeWebErrorResult, extras: errorDict)
-                            let errorType = (errorDict["errorType"] as? String) ?? ErrorTypes.INITIATE
-                            let errorMessage = (errorDict["errorMessage"] as? String) ?? ""
-                            let errorCode = (errorDict["errorCode"] as? Int) ?? -1
-                            delegate?.onConnectResponse(
-                                OtplessResult.error(errorType: errorType, errorCode: errorCode, errorMessage: errorMessage)
-                            )
+                            generateErrorResult(errorDict: errorDict)
                         }
                          cease()
                     }
@@ -259,7 +257,6 @@ extension OtplessSwiftLP {
         }
         var responseJson : [String:Any] = [:]
         var errorJson:[String:Any] = [:]
-        var errorResponseJson:[String:Any] = [:]
         var legacyToken = response["token"] as? String ?? ""
         
         if let base64Response = response["response"] as? String {
@@ -272,30 +269,16 @@ extension OtplessSwiftLP {
         } else {
             errorJson = [:]
         }
-        if let base64ErrorInResponse = response["response"] as? String {
-            errorResponseJson = Utils.base64ToJson(base64String: base64ErrorInResponse)
-        } else {
-            errorResponseJson = [:]
-        }
         if !responseJson.isEmpty,
            let token = responseJson["token"] as? String,
            !token.isEmpty {
             generateSuccessResult(token: token, responseJson: responseJson)
                 
         } else if !legacyToken.isEmpty  {
-            let result = OtplessResult.success(
-                token: legacyToken,
-                sessionTokenJWT: nil,
-                fireBaseToken: nil
-            )
-            DispatchQueue.main.async { [weak self] in
-                self?.delegate?.onConnectResponse(result)
-            }
+            generateLegacyTokenSuccessResult(token: legacyToken)
         } else if !errorJson.isEmpty {
             generateErrorResult(errorDict: errorJson)
-        } else if !errorResponseJson.isEmpty {
-            generateErrorResult(errorDict: errorResponseJson)
-        } else {
+        }  else {
             var errorMessage = ErrorMessages.UnknownResponse
             var errorCode = ErrorCodes.EXCEPTION_EC
             var errorType = ErrorTypes.INITIATE
@@ -327,9 +310,24 @@ extension OtplessSwiftLP {
               sessionTokenJWT: jwtToken.isEmpty ? nil : jwtToken,
               fireBaseToken: firebaseToken.isEmpty ? nil : firebaseToken
           )
+        
+        sendEvent(event: .nativeSuccessResult, extras: OtplessResult.successMap(from: result) ?? [:])
       DispatchQueue.main.async { [weak self] in
               self?.delegate?.onConnectResponse(result)
           }
+        cease()
+    }
+    
+    func generateLegacyTokenSuccessResult(token : String) {
+        let result = OtplessResult.success(
+            token: token,
+            sessionTokenJWT: nil,
+            fireBaseToken: nil
+        )
+        sendEvent(event: .nativeSuccessResult, extras: OtplessResult.successMap(from: result) ?? [:])
+        DispatchQueue.main.async { [weak self] in
+            self?.delegate?.onConnectResponse(result)
+        }
     }
     
     func generateErrorResult(errorDict:[String:Any]){
@@ -339,9 +337,11 @@ extension OtplessSwiftLP {
         let errorCode = (errorDict["errorCode"] as? Int)
             ?? Int(errorDict["errorCode"] as? String ?? "-1")
             ?? -1
+        sendEvent(event: .nativeWebErrorResult, extras: errorDict)
         DispatchQueue.main.async { [weak self] in
             self?.delegate?.onConnectResponse(OtplessResult.error(errorType: errorType, errorCode: errorCode, errorMessage: errorMessage))
         }
+        cease()
     }
     
 }

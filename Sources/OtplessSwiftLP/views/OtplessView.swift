@@ -34,7 +34,7 @@ class OtplessView: UIView {
         bridge.delegate = self
         clearWebViewCache()
         prepareUrlLoadWebview()
-        //OtplessHelper.sendEvent(event: "sdk_screen_loaded")
+        sendEvent(event: .webview_open)
     }
     
     private func initializeWebView() {
@@ -44,7 +44,6 @@ class OtplessView: UIView {
         mWebView.isOpaque = false
         mWebView.navigationDelegate = self
         setInspectable()
-        // OtplessHelper.sendEvent(event: EventConstants.WEBVIEW_ADDED)
         addSubview(mWebView)
     }
     
@@ -78,9 +77,7 @@ class OtplessView: UIView {
         contentController.add(self, name: messageName)
         let config = WKWebViewConfiguration()
         config.userContentController = contentController
-        
-        // OtplessHelper.sendEvent(event: EventConstants.JS_INJECT)
-        
+        sendEvent(event: .js_inject)
         return config
     }
     
@@ -107,9 +104,8 @@ class OtplessView: UIView {
         self.mWebView.evaluateJavaScript("navigator.userAgent") { [weak self] (result, error) in
             guard let self = self else { return }
             let request = URLRequest(url: URL(string: startUri)!)
-            // OtplessLogger.log(string: request.url?.absoluteString ?? "Unable to get URL", type: "WebView URL")
+            sendEvent(event:.webview_loading_start)
             mWebView.load(request)
-            // OtplessHelper.sendEvent(event: EventConstants.LOAD_URL)
         }
     }
         
@@ -134,9 +130,6 @@ extension OtplessView: BridgeDelegate {
 
 extension OtplessView: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-//        if !isHeadless {
-//            loader.hide()
-//        }
 
         guard let urlError = error as? URLError else {
             // Handle other types of errors if needed
@@ -153,8 +146,7 @@ extension OtplessView: WKNavigationDelegate {
             "description": error.localizedDescription,
             "message": getMessage(fromErrorCode: urlError.code)
         ]
-     
-        //OtplessHelper.sendEvent(event: EventConstants.WEBVIEW_URL_LOAD_FAIL, extras: errorDict)
+        sendEvent(event:.webview_loading_error, extras: errorDict)
         
         if [
             .notConnectedToInternet,
@@ -169,49 +161,14 @@ extension OtplessView: WKNavigationDelegate {
             var errorType = ErrorTypes.NETWORK
             let unknownErrorJson = ["errorType":errorType,"errorCode":errorCode,"errorMessage":errorMessage] as [String : Any]
             OtplessSwiftLP.shared.generateErrorResult(errorDict: unknownErrorJson)
-//            Otpless.sharedInstance.eventDelegate?.onEvent(
-//                eventCallback: OtplessEventResponse(
-//                    responseString: error.localizedDescription,
-//                    responseData: nil,
-//                    eventCode: .networkFailure
-//                )
-//            )
-            
-//                if let request = headlessRequest,
-//                   !request.isChannelEmpty()
-//                {
-//                    Otpless.sharedInstance.headlessDelegate?.onHeadlessResponse(
-//                        response: HeadlessResponse(
-//                            responseType: "INTERNET_ERR",
-//                            responseData: [
-//                                "errorMessage": "Internet Error",
-//                                "details": [
-//                                    "errorCode": String(urlError.errorCode),
-//                                    "description": urlError.localizedDescription.description
-//                                ]
-//                            ],
-//                            statusCode: 5002
-//                        )
-//                    )
-//                }
-                
-               // stopOtpless(dueToNoInternet: true)
-            
-            //OtplessLogger.log(string: "No internet connection", type: "No internet connection.")
         }
     }
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-//        if !isHeadless {
-//            loader.hide()
-//        }
-//        OtplessHelper.sendEvent(event: EventConstants.WEBVIEW_URL_LOAD_SUCCESS)
+        sendEvent(event:.webview_url_load_success)
     }
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-//        if !isHeadless {
-//            loader.hide()
-//        }
      
         guard let urlError = error as? URLError else {
             // Handle other types of errors if needed
@@ -228,8 +185,7 @@ extension OtplessView: WKNavigationDelegate {
             "description": error.localizedDescription,
             "message": getMessage(fromErrorCode: urlError.code)
         ]
-        
-//        OtplessHelper.sendEvent(event: EventConstants.WEBVIEW_URL_LOAD_FAIL, extras: errorDict)
+        sendEvent(event:.webview_loading_error, extras: errorDict)
         
         if [
             .notConnectedToInternet,
@@ -245,39 +201,6 @@ extension OtplessView: WKNavigationDelegate {
             var errorType = ErrorTypes.NETWORK
             let unknownErrorJson = ["errorType":errorType,"errorCode":errorCode,"errorMessage":errorMessage] as [String : Any]
             OtplessSwiftLP.shared.generateErrorResult(errorDict: unknownErrorJson)
-//            Otpless.sharedInstance.eventDelegate?.onEvent(
-//                eventCallback: OtplessEventResponse(
-//                    responseString: error.localizedDescription,
-//                    responseData: nil,
-//                    eventCode: .networkFailure
-//                )
-//            )
-            
-//            if isHeadless {
-//                if let request = headlessRequest,
-//                   !request.isChannelEmpty()
-//                {
-//                    Otpless.sharedInstance.headlessDelegate?.onHeadlessResponse(
-//                        response: HeadlessResponse(
-//                            responseType: "INTERNET_ERR",
-//                            responseData: [
-//                                "errorMessage": "Internet Error",
-//                                "details": [
-//                                    "errorCode": String(urlError.errorCode),
-//                                    "description": urlError.localizedDescription.description
-//                                ]
-//                            ],
-//                            statusCode: 5002
-//                        )
-//                    )
-//                }
-//                
-//                stopOtpless(dueToNoInternet: true)
-//            } else {
-//                loader.showWithErrorAndRetry(errorText: "Connection error" + " : " + error.localizedDescription.description)
-//            }
-//            
-            //OtplessLogger.log(string: "No internet connection", type: "No internet connection.")
         }
     }
 

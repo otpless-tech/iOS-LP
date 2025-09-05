@@ -122,19 +122,24 @@ final class OtplessEventManager {
             delegate?.onOTPlessEvent(event)
         } catch {
             let nsErr = (error as? _OtplessEventParseError)?.nsError ?? (error as NSError)
+            sendEvent(event:.eventParsingError, extras: ["error":nsErr.localizedDescription])
         }
     }
 
-    // MARK: - Parsing
-
+    
     private func parseEvent(_ json: [String: Any]) throws -> OtplessEventData {
-        guard let eventStr = (json["event"] as? String)?.uppercased()
+        // unwrap nested "eventData"
+        guard let eventData = json["eventData"] as? [String: Any] else {
+            throw _OtplessEventParseError.missingKey("eventData")
+        }
+        
+        guard let eventStr = (eventData["event"] as? String)?.uppercased()
         else { throw _OtplessEventParseError.missingKey("event") }
 
-        guard let typeStr = (json["type"] as? String)?.uppercased()
+        guard let typeStr = (eventData["type"] as? String)?.uppercased()
         else { throw _OtplessEventParseError.missingKey("type") }
 
-        let meta = (json["metaData"] as? [String: Any]) ?? [:]
+        let meta = (eventData["metaData"] as? [String: Any]) ?? [:]
 
         guard let category = OtplessEventCategory.from(eventStr)
         else { throw _OtplessEventParseError.invalidValue("event", eventStr) }
@@ -142,8 +147,11 @@ final class OtplessEventManager {
         guard let eventType = OtplessEventType.from(typeStr)
         else { throw _OtplessEventParseError.invalidValue("type", typeStr) }
 
-        return OtplessEventData(category: category,
-                                eventType: eventType,
-                                metaData: meta as NSDictionary)
+        return OtplessEventData(
+            category: category,
+            eventType: eventType,
+            metaData: meta as NSDictionary
+        )
     }
+
 }

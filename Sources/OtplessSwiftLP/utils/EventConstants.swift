@@ -20,7 +20,7 @@ func sendEvent(event: String, extras: [String: Any] = [:]){
         var params = [String: String]()
         params["event_name"] = event
         params["platform"] = "iOS-LP"
-        params["sdk_version"] = "1.0.9"
+        params["sdk_version"] = "1.1.0"
         params["mid"] = OtplessSwiftLP.shared.appId
         params["event_timestamp"] = Utils.formatCurrentTimeToDateString()
         
@@ -132,6 +132,7 @@ enum EventConstants: String {
     case webview_loading_start = "native_webview_loading_start"
     case webview_open = "native_webview_open"
     case webview_request_recieved = "native_webview_request_received"
+    case eventParsingError = "native_webview_event_parsing_error"
 }
 
 @objcMembers

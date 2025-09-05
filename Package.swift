@@ -13,8 +13,6 @@ let package = Package(
             targets: ["OtplessSwiftLP"]),
     ],
     dependencies: [
-        // Adding Socket.IO dependency
-        .package(url: "https://github.com/socketio/socket.io-client-swift.git", from: "16.1.1")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -22,7 +20,6 @@ let package = Package(
         .target(
             name: "OtplessSwiftLP",
             dependencies: [
-                .product(name: "SocketIO", package: "socket.io-client-swift")
             ]
         ),
         .testTarget(

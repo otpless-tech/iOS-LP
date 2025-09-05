@@ -22,6 +22,5 @@ Pod::Spec.new do |s|
         'OtplessSwiftLP' => ['Sources/PrivacyInfo.xcprivacy']
     }
   
-    s.dependency 'Socket.IO-Client-Swift', '~> 16.1.1'
   end
   

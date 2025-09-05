@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
     s.name             = 'OtplessSwiftLP'
-    s.version          = '1.0.9'
+    s.version          = '1.1.0'
     s.summary          = 'A Swift SDK for integrating Otpless Pre Build UI.'
   
     s.description      = <<-DESC
@@ -22,6 +22,5 @@ Pod::Spec.new do |s|
         'OtplessSwiftLP' => ['Sources/PrivacyInfo.xcprivacy']
     }
   
-    s.dependency 'Socket.IO-Client-Swift', '~> 16.1.1'
   end
   

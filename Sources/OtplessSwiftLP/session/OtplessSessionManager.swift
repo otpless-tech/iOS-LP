@@ -18,19 +18,16 @@ public actor OtplessSessionManager {
     private var appId: String = ""
     private var state: String = ""
     private var authenticationTask: Task<Void, Never>?
-    
     private let apiRepository = ApiRepository()
     
     private init() {
     
     }
 
-    // MARK: Init equivalent
-    public func initialize(appId: String) async {
+    public func initialize(appId: String) {
         if !self.appId.isEmpty { return }
         self.appId = appId
     }
-
 
     public func getActiveSession() async -> OtplessSessionState {
         do {
@@ -39,20 +36,17 @@ public actor OtplessSessionManager {
                 DLog("no saved session is available to check, returning inactive session")
                 return .inactive
             }
-
             if isJwtTokenActive(session.jwtToken) {
                 DLog("active session available")
                 startAuthenticationLoopIfNotStarted()
                 return .active(session.jwtToken)
             }
-
             DLog("session expired, refreshing jwt")
             let refreshStateResponse = await refreshJwtToken(oldSessionInfo: session)
             if case .active = refreshStateResponse {
                 startAuthenticationLoopIfNotStarted()
             }
             return refreshStateResponse
-
         } catch {
             sendEvent(event: EventConstants.sessionError, extras: ["errorMessage": error.localizedDescription])
             deleteSession()
@@ -75,7 +69,6 @@ public actor OtplessSessionManager {
         ]
         deleteSession()
         authenticationTask?.cancel()
-
         // server-side delete (best-effort)
         let response = await apiRepository.deleteSession(
             sessionToken: session.sessionToken, headers: makeHeaderMap(), body: requestMap
@@ -87,8 +80,6 @@ public actor OtplessSessionManager {
             DLog("session logout api failed")
         }
     }
-
-    // MARK: Internal (API parity)
 
     internal func saveSessionAndState(_ sessionInfo: OtplessSessionInfo, state: String) async {
         saveSession(sessionInfo)
@@ -112,8 +103,6 @@ public actor OtplessSessionManager {
         }
         return obj
     }
-
-    // MARK: Helpers
 
     private func isJwtTokenActive(_ jwt: String) -> Bool {
         // Parse JWT payload and check exp > now
@@ -155,8 +144,6 @@ public actor OtplessSessionManager {
         return headers
     }
 
-    // MARK: Refresh
-
     private func refreshJwtToken(oldSessionInfo: OtplessSessionInfo) async -> OtplessSessionState {
         DLog("refresh session token started")
         let loginUri = "\(ORIGIN)/rc5/appid/\(appId)"
@@ -188,8 +175,6 @@ public actor OtplessSessionManager {
             return .inactive
         }
     }
-
-    // MARK: Auth loop
 
     public func startAuthenticationLoopIfNotStarted() {
         if let task = authenticationTask, !task.isCancelled {
@@ -251,5 +236,3 @@ public actor OtplessSessionManager {
         }
     }
 }
-
-

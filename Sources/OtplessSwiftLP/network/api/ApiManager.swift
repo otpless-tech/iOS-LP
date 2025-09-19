@@ -112,9 +112,21 @@ internal final class HTTPClient {
                 let message = json?["description"] as? String
                     ?? HTTPURLResponse.localizedString(forStatusCode: http.statusCode)
                     ?? "HTTP \(http.statusCode)"
+                
+                // sending api error
+                sendEvent(event: .apiResponse, extras: [
+                    "api_exception": message,
+                    "method": request.httpMethod,
+                    "which_api": request.url?.absoluteString ?? "unknown"
+                ])
                 return .error(error: ApiError(message: message, statusCode: http.statusCode, responseJson: json))
             }
         } catch {
+            sendEvent(event: .apiResponse, extras: [
+                "api_exception": error.localizedDescription,
+                "method": request.httpMethod,
+                "which_api": request.url?.absoluteString ?? "unknown"
+            ])
             // Transport errors (DNS, TLS, no network, timeouts, cancellations, etc.)
             return .error(error: ApiError(message: error.localizedDescription))
         }

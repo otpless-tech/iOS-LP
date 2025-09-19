@@ -45,6 +45,9 @@ import os
     ) { 
         sendEvent(event: .initializationStarted)
         self.appId = appId
+        Task {
+            await OtplessSessionManager.shared.initialize(appId: appId)
+        }
         if let merchantLoginUri = merchantLoginUri {
             self.loginUri = merchantLoginUri
         } else {

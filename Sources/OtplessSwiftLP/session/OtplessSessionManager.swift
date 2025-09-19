@@ -176,7 +176,7 @@ public actor OtplessSessionManager {
         }
     }
 
-    public func startAuthenticationLoopIfNotStarted() {
+    private func startAuthenticationLoopIfNotStarted() {
         if let task = authenticationTask, !task.isCancelled {
             // Already running
             DLog("authentication loop is already active")

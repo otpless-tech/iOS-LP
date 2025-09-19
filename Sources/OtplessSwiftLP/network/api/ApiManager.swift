@@ -10,7 +10,6 @@ import Foundation
 class ApiManager {
     private let CONNECT_BASE_URL = "https://connect.otpless.app"
     
-    // todo i think this class is not in use
     func postConnect(
         path: String,
         body: [String: Any]?,

@@ -133,6 +133,13 @@ enum EventConstants: String {
     case webview_open = "native_webview_open"
     case webview_request_recieved = "native_webview_request_received"
     case eventParsingError = "native_webview_event_parsing_error"
+    
+    // session events
+    case getActiveSession = "native_get_active_session"
+    case logoutSession = "native_logout_session"
+    case sessionError = "native_session_error"
+    case errorApiResponse = "native_api_response_error"
+    case successApiResponse = "native_api_response_success"
 }
 
 @objcMembers

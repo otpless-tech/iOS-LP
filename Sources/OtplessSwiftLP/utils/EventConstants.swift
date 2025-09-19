@@ -42,7 +42,7 @@ func sendEvent(event: String, extras: [String: Any] = [:]){
         }
         
         fetchDataWithGET(
-            apiRoute: "https://d33ftqsb9ygkos.cloudfront.net",
+            apiRoute: "https://events.otpless.tech/events/",
             params: params
         )
     }

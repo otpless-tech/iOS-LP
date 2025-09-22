@@ -12,7 +12,6 @@ import os
     private var webviewBaseURL = ""
     private var originalUri = "https://otpless.com/rc5/appid/"
     @objc weak var otplessView: OtplessView?
-    internal private(set) var apiRepository: ApiRepository = ApiRepository()
 
     internal private(set) weak var delegate: ConnectResponseDelegate?
     internal private(set) weak var eventDelegate: OnEventDelegate?
@@ -46,6 +45,9 @@ import os
     ) { 
         sendEvent(event: .initializationStarted)
         self.appId = appId
+        Task {
+            await OtplessSessionManager.shared.initialize(appId: appId)
+        }
         if let merchantLoginUri = merchantLoginUri {
             self.loginUri = merchantLoginUri
         } else {
@@ -113,7 +115,6 @@ import os
     }
 
     private func proceedToCreateLoadingUrl() {
-        
         let url: URL?
         if isUsingCustomURL {
             // In case of custom url, appId is appended along with the baseUrl when start function is called.
@@ -294,9 +295,13 @@ extension OtplessSwiftLP {
         if let sessionInfo = responseJson["sessionInfo"] as? [String: Any] {
             jwtToken = (sessionInfo["sessionTokenJWT"] as? String) ?? ""
             if !jwtToken.isEmpty {
+                let state = responseJson["state"] as? String ?? ""
                 sessionToken = (sessionInfo["sessionToken"] as? String) ?? ""
                 refreshToken = (sessionInfo["refreshToken"] as? String) ?? ""
-                // TODO session refresh logic
+                let sessionInfo = OtplessSessionInfo(sessionToken: sessionToken, refreshToken: refreshToken, jwtToken: jwtToken)
+                Task {
+                    await OtplessSessionManager.shared.saveSessionAndState(sessionInfo, state: state)
+                }
             }
         }
         // firebaseInfo

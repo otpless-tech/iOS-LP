@@ -11,6 +11,8 @@ import UIKit
 
 private var deviceInfoString: String = ""
 
+internal var sessionManagerAppId: String = ""
+
 func sendEvent(event: EventConstants, extras: [String: Any] = [:]) {
     sendEvent(event: event.rawValue, extras: extras)
 }
@@ -20,8 +22,14 @@ func sendEvent(event: String, extras: [String: Any] = [:]){
         var params = [String: String]()
         params["event_name"] = event
         params["platform"] = "iOS-LP"
-        params["sdk_version"] = "1.1.0"
-        params["mid"] = OtplessSwiftLP.shared.appId
+        params["sdk_version"] = "1.1.1"
+        var mid = ""
+        if !OtplessSwiftLP.shared.appId.isEmpty {
+            mid = OtplessSwiftLP.shared.appId
+        } else {
+            mid = sessionManagerAppId;
+        }
+        params["mid"] = mid
         params["event_timestamp"] = Utils.formatCurrentTimeToDateString()
         
         var newEventParams = [String: Any]()
@@ -42,7 +50,7 @@ func sendEvent(event: String, extras: [String: Any] = [:]){
         }
         
         fetchDataWithGET(
-            apiRoute: "https://d33ftqsb9ygkos.cloudfront.net",
+            apiRoute: "https://events.otpless.tech/events/",
             params: params
         )
     }
@@ -133,6 +141,13 @@ enum EventConstants: String {
     case webview_open = "native_webview_open"
     case webview_request_recieved = "native_webview_request_received"
     case eventParsingError = "native_webview_event_parsing_error"
+    
+    // session events
+    case getActiveSession = "native_get_active_session"
+    case logoutSession = "native_logout_session"
+    case sessionError = "native_session_error"
+    case errorApiResponse = "native_api_response_error"
+    case successApiResponse = "native_api_response_success"
 }
 
 @objcMembers

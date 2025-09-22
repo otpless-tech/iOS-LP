@@ -198,3 +198,15 @@ final internal class Utils {
     }
 
 }
+
+internal func DLog(
+    _ message: @autoclosure () -> Any,
+    file: String = #file,
+    function: String = #function,
+    line: Int = #line
+) {
+#if DEBUG
+    let filename = (file as NSString).lastPathComponent
+    print("📍[\(filename):\(line)] \(function) -> \(message())")
+#endif
+}

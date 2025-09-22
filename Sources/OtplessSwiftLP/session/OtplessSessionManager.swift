@@ -27,6 +27,7 @@ public actor OtplessSessionManager {
     public func initialize(appId: String) {
         if !self.appId.isEmpty { return }
         self.appId = appId
+        sessionManagerAppId = appId
     }
 
     public func getActiveSession() async -> OtplessSessionState {

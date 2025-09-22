@@ -234,5 +234,6 @@ public actor OtplessSessionManager {
         for key in [StorageKeys.session, StorageKeys.state] {
             SecureStorage.shared.delete(key: key)
         }
+        SecureStorage.shared.deleteGeneratedKeys()
     }
 }

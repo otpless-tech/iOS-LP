@@ -32,8 +32,8 @@ internal final class SecureStorage: @unchecked Sendable {
     
     func retrieve(key: String) -> String? {
         let storageKey = key
-        guard let encryptionKey = loadEncryptionKey(),
-              let storedData = defaults.data(forKey: storageKey),
+        guard let storedData = defaults.data(forKey: storageKey),
+              let encryptionKey = loadEncryptionKey(),
               let sealedBox = try? AES.GCM.SealedBox(combined: storedData),
               let decryptedData = try? AES.GCM.open(sealedBox, using: encryptionKey),
               let value = String(data: decryptedData, encoding: .utf8) else {
